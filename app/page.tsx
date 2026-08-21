@@ -5,7 +5,7 @@ export default function Home() {
       <div
         className="hidden h-full w-full bg-cover bg-center bg-no-repeat lg:block"
         style={{
-          backgroundImage: "url('/commingsoon.jpeg')",
+          backgroundImage: "url('/commingsoon.png')",
         }}
       />
 
@@ -13,7 +13,7 @@ export default function Home() {
       <div
         className="block h-full w-full bg-no-repeat lg:hidden"
         style={{
-          backgroundImage: "url('/commingsoon.jpeg')",
+          backgroundImage: "url('/mobilecommingsoon.png')",
           backgroundSize: "cover",
           backgroundPosition: "center top",
         }}
