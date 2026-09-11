@@ -1,7 +1,7 @@
 export type Cheesecake = {
-  id: string;
-  slug: string;
+  id: number | string;
   name: string;
+  slug: string;
   description: string;
   price: number;
   image: string;
