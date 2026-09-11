@@ -6,9 +6,10 @@ import {
   Home,
   House,
   Heart,
-  Mail,
+  Phone,
   UserRound,
   CircleUserRound,
+  ShoppingBag
 } from "lucide-react";
 
 const navItems = [
@@ -31,10 +32,10 @@ const navItems = [
     activeIcon: CircleUserRound,
   },
   {
-    label: "Contact",
-    href: "/contact",
-    icon: Mail,
-    activeIcon: Mail,
+    label: "Cart",
+    href: "/cart",
+    icon: ShoppingBag,
+    activeIcon: ShoppingBag,
   },
 
 ];

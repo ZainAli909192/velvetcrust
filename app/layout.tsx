@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
 import "./globals.css";
-import MobileBottomNav from "@/components/home/mobile-bottom-nav";
-
-export const metadata: Metadata = {
-  title: "Velvet Crust",
-  description: "Homemade cheesecakes crafted with love.",
-};
+import SiteShell from "@/components/ui/site-shell";
 
 export default function RootLayout({
   children,
@@ -15,9 +9,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
-
-        <MobileBottomNav />
+        <SiteShell>{children}</SiteShell>
       </body>
     </html>
   );
