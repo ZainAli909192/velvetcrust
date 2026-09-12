@@ -17,22 +17,28 @@ import {
 
 export default function Hero() {
   return (
-    <section
-      className="
-        relative
-        min-h-[100dvh]
-        w-full
-        overflow-hidden
-        bg-cover
-        bg-center
-        bg-no-repeat
-      "
-      style={{
-        backgroundImage: "url('/images/herobg.png')",
-      }}
-    >
+    <section className="relative min-h-[100dvh] w-full overflow-hidden">
+      {/* Video background */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        className="
+          absolute
+          inset-0
+          h-full
+          w-full
+          object-cover
+          object-center
+        "
+      >
+        <source src="/images/video.mp4" type="video/mp4" />
+      </video>
+
       {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#FFF7EA]/95 via-[#FFF7EA]/55 to-black/10" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#FFF7EA]/95 via-[#FFF7EA]/55 to-black/10" />
 
       {/* Header */}
       <Header />
@@ -64,7 +70,6 @@ export default function Hero() {
         "
       >
         <div className="w-full max-w-[700px]">
-
           {/* Eyebrow */}
           <motion.div
             variants={fadeUp}
@@ -114,9 +119,10 @@ export default function Hero() {
               xl:text-[94px]
             "
           >
-            A Slice Of <span className="text-black">
-               Happiness
-              </span>
+            A Slice Of{" "}
+            <span className="text-black">
+              Happiness
+            </span>
           </motion.h1>
 
           {/* Description */}
@@ -249,10 +255,6 @@ export default function Hero() {
     </section>
   );
 }
-
-/* --------------------------------
-   Feature
---------------------------------- */
 
 type FeatureProps = {
   icon: React.ReactNode;

@@ -111,7 +111,7 @@ export default function SiteLoader() {
                   alt="Velvet Crust"
                   fill
                   priority
-                  className="rounded-full object-contain"
+                  className="rounded-full object-center "
                 />
               </motion.div>
             </div>
@@ -165,7 +165,7 @@ export default function SiteLoader() {
                 sm:text-[32px]
               "
             >
-              A Slice of Happiness
+              A Slice Of Happiness
             </motion.h2>
 
          

@@ -87,7 +87,7 @@ export default function Footer() {
                 h-[95px]
                 w-[95px]
                 rounded-full
-                object-contain
+                object-center
                 transition-transform
                 duration-500
                 hover:scale-105

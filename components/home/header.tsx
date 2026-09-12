@@ -117,14 +117,18 @@ export default function Header() {
           className="relative z-50"
         >
           <Image
-            src="/images/logo.png"
+            src="/images/logo3.png"
             alt="Velvet Crust"
             width={150}
-            height={150}
+            height={150} 
             priority
             className={`
-              rounded-[35%]
-              object-contain
+             ${
+            showBackground
+            ?"" : "mt-5"
+             }
+              rounded-full
+              object-center
               transition-all
               duration-500
 
