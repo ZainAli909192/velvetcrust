@@ -3,19 +3,26 @@
 import SiteLoader from "@/components/ui/site-loader";
 import MobileBottomNav from "@/components/home/mobile-bottom-nav";
 
+import { CartProvider } from "@/components/store/cart-context";
+import { AuthProvider } from "@/components/store/auth-context";
+import { ToastProvider } from "@/components/providers/toast-provider";
+
 export default function SiteShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <SiteLoader />
+    <AuthProvider>
+      <CartProvider>
+        <ToastProvider>
+          <SiteLoader />
 
-      {children}
+          {children}
 
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav />
-    </>
+          <MobileBottomNav />
+        </ToastProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }

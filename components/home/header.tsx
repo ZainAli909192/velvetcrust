@@ -10,6 +10,7 @@ import {
   UserRound,
   ShoppingBag,
 } from "lucide-react";
+import { useCart } from "@/components/store/cart-context";
 
 const links = [
   {
@@ -36,14 +37,23 @@ const links = [
 
 export default function Header() {
   const pathname = usePathname();
+  const { totalItems } = useCart();
   const [scrolled, setScrolled] = useState(false);
+
+  const isHomePage = pathname === "/";
+
+  /*
+   * Header should have a solid background when:
+   * 1. User is not on homepage
+   * 2. User has scrolled on homepage
+   */
+  const showBackground = !isHomePage || scrolled;
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
 
-    // Check initial position
     handleScroll();
 
     window.addEventListener("scroll", handleScroll, {
@@ -68,7 +78,7 @@ export default function Header() {
         duration-500
 
         ${
-          scrolled
+          showBackground
             ? `
               bg-[var(--brand-background)]/95
               shadow-[0_8px_30px_rgba(50,23,22,0.08)]
@@ -94,14 +104,18 @@ export default function Header() {
           xl:px-24
 
           ${
-            scrolled
+            showBackground
               ? "h-20 lg:h-[92px]"
               : "h-24 lg:h-32"
           }
         `}
       >
         {/* Logo */}
-        <Link href="/" className="relative z-50 mt-2">
+        <Link
+          href="/"
+          aria-label="Velvet Crust Home"
+          className="relative z-50"
+        >
           <Image
             src="/images/logo.png"
             alt="Velvet Crust"
@@ -115,20 +129,24 @@ export default function Header() {
               duration-500
 
               ${
-                scrolled
+                showBackground
                   ? `
-                    h-[68px]
-                    w-[68px]
+                    h-[66px]
+                    w-[66px]
+
                     sm:h-[72px]
                     sm:w-[72px]
+
                     lg:h-[82px]
                     lg:w-[82px]
                   `
                   : `
                     h-[82px]
                     w-[82px]
+
                     sm:h-[95px]
                     sm:w-[95px]
+
                     lg:h-[130px]
                     lg:w-[130px]
                   `
@@ -160,16 +178,18 @@ export default function Header() {
                   rounded-full
                   px-4
                   py-2.5
+
                   text-sm
                   font-medium
                   uppercase
                   tracking-[0.11em]
+
                   transition-all
                   duration-300
 
                   ${
                     isActive
-                      ? scrolled
+                      ? showBackground
                         ? `
                           bg-[var(--brand-primary-soft)]
                           text-[var(--brand-primary)]
@@ -178,7 +198,7 @@ export default function Header() {
                           bg-[var(--brand-cream)]
                           text-[var(--brand-primary)]
                         `
-                      : scrolled
+                      : showBackground
                         ? `
                           text-[var(--brand-text)]
                           hover:bg-[var(--brand-primary-soft)]
@@ -192,15 +212,18 @@ export default function Header() {
                   }
                 `}
               >
-                <Icon
-                  size={17}
-                  strokeWidth={isActive ? 2.3 : 1.7}
-                  className="
-                    transition-transform
-                    duration-300
-                    group-hover:scale-105
-                  "
-                />
+                <span className="relative">
+                  <Icon
+                    size={17}
+                    strokeWidth={isActive ? 2.3 : 1.7}
+                    className="transition-transform duration-300 group-hover:scale-105"
+                  />
+                  {link.href === "/cart" && totalItems > 0 && (
+                    <span className="absolute -right-3 -top-3 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[var(--brand-primary)] px-1 text-[8px] font-bold text-white ring-2 ring-[var(--brand-background)]">
+                      {totalItems > 99 ? "99+" : totalItems}
+                    </span>
+                  )}
+                </span>
 
                 <span>{link.label}</span>
 

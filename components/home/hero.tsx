@@ -1,6 +1,7 @@
 "use client";
 
 import Header from "./header";
+import Link from "next/link";
 import {
   ArrowRight,
   CakeSlice,
@@ -113,7 +114,7 @@ export default function Hero() {
               xl:text-[94px]
             "
           >
-            A Slice of <span className="text-black">
+            A Slice Of <span className="text-black">
                Happiness
               </span>
           </motion.h1>
@@ -140,8 +141,8 @@ export default function Hero() {
 
           {/* CTA */}
           <motion.div variants={fadeUp}>
-            <a
-              href="/order"
+            <Link
+              href="/#cheesecakes"
               className="
                 mt-8
                 hidden
@@ -168,7 +169,7 @@ export default function Hero() {
               Order Now
 
               <ArrowRight size={17} />
-            </a>
+            </Link>
           </motion.div>
 
           {/* Features */}

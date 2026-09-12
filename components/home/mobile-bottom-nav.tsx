@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import {
   Home,
   House,
   Heart,
-  Phone,
   UserRound,
-  CircleUserRound,
-  ShoppingBag
+  ShoppingBag,
 } from "lucide-react";
+
+import { useCart } from "@/components/store/cart-context";
 
 const navItems = [
   {
@@ -25,11 +26,11 @@ const navItems = [
     icon: Heart,
     activeIcon: Heart,
   },
-    {
+  {
     label: "Account",
     href: "/account",
     icon: UserRound,
-    activeIcon: CircleUserRound,
+    activeIcon: UserRound,
   },
   {
     label: "Cart",
@@ -37,11 +38,11 @@ const navItems = [
     icon: ShoppingBag,
     activeIcon: ShoppingBag,
   },
-
 ];
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
+  const { totalItems } = useCart();
 
   return (
     <nav
@@ -49,11 +50,11 @@ export default function MobileBottomNav() {
         fixed
         bottom-4
         left-1/2
-        z-[100]
+        z-[500]
         w-[calc(100%-28px)]
-        max-w-[460px]
+        max-w-[520px]
         -translate-x-1/2
-        rounded-[24px]
+        rounded-[26px]
         border
         border-[var(--brand-border)]
         bg-[var(--brand-cream)]/95
@@ -69,49 +70,115 @@ export default function MobileBottomNav() {
           const isActive =
             item.href === "/"
               ? pathname === "/"
-              : pathname.startsWith(item.href);
+              : pathname.startsWith(
+                  item.href
+                );
 
-          const Icon = isActive ? item.activeIcon : item.icon;
+          const Icon = isActive
+            ? item.activeIcon
+            : item.icon;
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              className="relative flex min-h-[58px] flex-col items-center justify-center gap-1"
+              className="
+                relative
+                flex
+                min-h-[60px]
+                flex-col
+                items-center
+                justify-center
+                gap-1
+              "
             >
-              {/* Active background */}
+              {/* Active Background */}
+
               <span
-                className={`absolute inset-x-2 inset-y-0 rounded-[18px] transition-all duration-300 ${
-                  isActive
-                    ? "bg-[var(--brand-primary-soft)]"
-                    : "bg-transparent"
-                }`}
+                className={`
+                  absolute
+                  inset-x-1
+                  inset-y-0
+                  rounded-[18px]
+                  transition-all
+                  duration-300
+
+                  ${
+                    isActive
+                      ? "bg-[var(--brand-primary-soft)]"
+                      : "bg-transparent"
+                  }
+                `}
               />
 
               {/* Icon */}
-              <Icon
-                size={22}
-                strokeWidth={isActive ? 2.4 : 1.7}
-                fill={isActive ? "currentColor" : "none"}
-                className={`relative z-10 transition-all duration-300 ${
-                  isActive
-                    ? "text-[var(--brand-primary)]"
-                    : "text-[var(--brand-muted)]"
-                }`}
-              />
+
+              <div className="relative z-10">
+                <Icon
+                  size={22}
+                  strokeWidth={
+                    isActive ? 2.4 : 1.7
+                  }
+                  fill={
+                    isActive
+                      ? "currentColor"
+                      : "none"
+                  }
+                  className={
+                    isActive
+                      ? "text-[var(--brand-primary)]"
+                      : "text-[var(--brand-muted)]"
+                  }
+                />
+
+                {/* Cart Count */}
+
+                {item.href === "/cart" &&
+                  totalItems > 0 && (
+                    <span
+                      className="
+                        absolute
+                        -right-3
+                        -top-2
+                        flex
+                        h-[17px]
+                        min-w-[17px]
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-[var(--brand-primary)]
+                        px-1
+                        text-[8px]
+                        font-bold
+                        text-white
+                      "
+                    >
+                      {totalItems > 99
+                        ? "99+"
+                        : totalItems}
+                    </span>
+                  )}
+              </div>
 
               {/* Label */}
+
               <span
-                className={`relative z-10 text-[10px] font-semibold tracking-[0.03em] transition-colors ${
-                  isActive
-                    ? "text-[var(--brand-primary)]"
-                    : "text-[var(--brand-muted)]"
-                }`}
+                className={`
+                  relative
+                  z-10
+                  text-[10px]
+                  font-semibold
+
+                  ${
+                    isActive
+                      ? "text-[var(--brand-primary)]"
+                      : "text-[var(--brand-muted)]"
+                  }
+                `}
               >
                 {item.label}
               </span>
 
-              {/* Active indicator */}
               {isActive && (
                 <span className="absolute -bottom-0.5 left-1/2 z-10 h-[3px] w-5 -translate-x-1/2 rounded-full bg-[var(--brand-primary)]" />
               )}

@@ -26,7 +26,6 @@
 import Hero from "@/components/home/hero";
 import CheesecakesSection from "@/components/home/cheesecakes-section";
 import MomentsSection from "@/components/home/moments-section";
-import SweetGallery from "@/components/home/sweet-gallery";
 import FinalCTA from "@/components/home/final-cta";
 import Footer from "@/components/home/footer";
 

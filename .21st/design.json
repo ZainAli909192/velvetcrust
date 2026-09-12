@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "project": {
+    "name": "velveltcrust",
+    "productType": null,
+    "stack": [
+      "nextjs",
+      "react",
+      "tailwind-v4"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "app/globals.css"
+    ],
+    "components": [
+      "components/ui"
+    ],
+    "assets": [
+      "public/images"
+    ],
+    "instructions": [
+      "AGENTS.md",
+      "CLAUDE.md"
+    ]
+  },
+  "design": {
+    "colorMode": "light",
+    "colors": {
+      "--brand-primary": {
+        "value": "#6b1f24",
+        "source": "app/globals.css"
+      },
+      "--brand-primary-dark": {
+        "value": "#4d1519",
+        "source": "app/globals.css"
+      },
+      "--brand-primary-light": {
+        "value": "#8b353a",
+        "source": "app/globals.css"
+      },
+      "--brand-primary-soft": {
+        "value": "#f3e7e2",
+        "source": "app/globals.css"
+      },
+      "--brand-background": {
+        "value": "#fffaf2",
+        "source": "app/globals.css"
+      },
+      "--brand-muted": {
+        "value": "#836b65",
+        "source": "app/globals.css"
+      },
+      "--brand-border": {
+        "value": "#ead9cb",
+        "source": "app/globals.css"
+      }
+    },
+    "typography": {
+      "--brand-text": {
+        "value": "#4f2523",
+        "source": "app/globals.css"
+      },
+      "--brand-text-dark": {
+        "value": "#321716",
+        "source": "app/globals.css"
+      }
+    },
+    "spacing": {},
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [
+      "button",
+      "cylinder-carousel",
+      "site-loader",
+      "site-shell"
+    ],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [],
+    "avoid": []
+  },
+  "decisions": [
+    "Checkout uses a compact three-step journey: account, delivery, then payment, with one restrained primary action per screen.",
+    "Customer account uses a warm minimal dashboard with summary metrics, recent order history, and quick actions."
+  ],
+  "evidence": [
+    {
+      "fact": "components.installed",
+      "source": "components/ui"
+    },
+    {
+      "fact": "design.colorMode:light",
+      "source": "app/globals.css"
+    },
+    {
+      "fact": "design.tokens",
+      "source": "app/globals.css"
+    },
+    {
+      "fact": "project.instructions",
+      "source": "AGENTS.md"
+    },
+    {
+      "fact": "project.instructions",
+      "source": "CLAUDE.md"
+    },
+    {
+      "fact": "project.stack:nextjs",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:tailwind-v4",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-09-12T11:10:13.778Z"
+}

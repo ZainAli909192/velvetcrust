@@ -2,20 +2,61 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import {
+  Check,
+  ShoppingBag,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
+import Button from "@/components/ui/button";
+
 import { cheesecakes } from "@/data/cheesecakes";
+
 import {
   fadeUp,
   staggerContainer,
   viewportOnce,
 } from "@/lib/animations";
 
+import { useCart } from "@/components/store/cart-context";
+import { useToast } from "@/components/providers/toast-provider";
+import { playSuccessSound } from "@/lib/sound";
+
 export default function CheesecakesSection() {
+  const {
+    addItem,
+    isInCart,
+  } = useCart();
+
+  const { showToast } = useToast();
+
+  const handleAddToCart = (
+    cake: (typeof cheesecakes)[number]
+  ) => {
+    addItem({
+      id: cake.id,
+      name: cake.name,
+      slug: cake.slug,
+      description: cake.description,
+      price: cake.price,
+      image: cake.image,
+    });
+
+    playSuccessSound();
+
+    showToast({
+      type: "success",
+      title: "Added Successfully",
+      message: `${cake.name} added to your bag`,
+    });
+  };
+
   return (
-    <section className="relative overflow-hidden bg-white px-4 py-20 sm:px-8 lg:px-12 xl:px-20">
-      {/* Decorative Background */}
+    <section
+      id="cheesecakes"
+      className="relative overflow-hidden bg-white px-4 py-20 sm:px-8 lg:px-12 xl:px-20"
+    >
+      {/* Background */}
       <div className="pointer-events-none absolute left-0 top-24 h-56 w-56 rounded-full bg-[var(--brand-primary-soft)]/30 blur-3xl" />
 
       <div className="pointer-events-none absolute bottom-32 right-0 h-72 w-72 rounded-full bg-[var(--brand-primary-soft)]/30 blur-3xl" />
@@ -34,12 +75,12 @@ export default function CheesecakesSection() {
           </h2>
 
           <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[var(--brand-muted)] sm:text-base">
-            Homemade cheesecakes crafted with premium ingredients and made
-            for every sweet moment.
+            Homemade cheesecakes crafted with premium
+            ingredients and made for every sweet moment.
           </p>
         </motion.div>
 
-        {/* Cheesecake Grid */}
+        {/* Products */}
         <motion.div
           variants={staggerContainer}
           initial="hidden"
@@ -53,127 +94,144 @@ export default function CheesecakesSection() {
             grid-cols-2
             gap-x-4
             gap-y-12
-
             sm:gap-x-6
-
             lg:grid-cols-3
             lg:items-start
             lg:gap-x-10
             lg:gap-y-16
           "
         >
-          {cheesecakes.map((cake, index) => (
-            <motion.article
-              key={cake.id}
-              variants={fadeUp}
-              className="group relative flex flex-col"
-            >
-              {/* FIXED PRODUCT STAGE */}
-              <div
-                className="
-                  relative
-                  flex
-                  h-[180px]
-                  w-full
-                  items-center
-                  justify-center
+          {cheesecakes.map(
+            (cake, index) => {
+              const added = isInCart(cake.id);
 
-                  sm:h-[250px]
-
-                  lg:h-[320px]
-
-                  xl:h-[350px]
-                "
-              >
-                {/* Product Image */}
-                <motion.div
-                  whileHover={{
-                    y: -8,
-                    scale: 1.03,
-                  }}
-                  transition={{
-                    duration: 0.35,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  className={`
-                    relative
-                    h-full
-                    w-full
-                    transition-transform
-                    duration-500
-
-                    ${
-                      index === 1
-                        ? "scale-[0.82] lg:scale-[0.84]"
-                        : "scale-100"
-                    }
-                  `}
+              return (
+                <motion.article
+                  key={cake.id}
+                  variants={fadeUp}
+                  className="group relative flex flex-col"
                 >
-                  <Image
-                    src={cake.image}
-                    alt={cake.name}
-                    fill
+                  {/* Image */}
+                  <Link
+                    href={`/order/${cake.slug}`}
+                    aria-label={cake.name}
                     className="
-                      object-contain
-                      object-center
-                      drop-shadow-[0_18px_30px_rgba(76,28,28,0.12)]
+                      relative
+                      flex
+                      h-[180px]
+                      w-full
+                      items-center
+                      justify-center
+                      sm:h-[250px]
+                      lg:h-[320px]
+                      xl:h-[350px]
                     "
-                    sizes="(max-width: 1024px) 50vw, 33vw"
-                  />
-                </motion.div>
-              </div>
+                  >
+                    <motion.div
+                      whileHover={{
+                        y: -8,
+                        scale: 1.03,
+                      }}
+                      transition={{
+                        duration: 0.35,
+                        ease: [
+                          0.22,
+                          1,
+                          0.36,
+                          1,
+                        ],
+                      }}
+                      className={`
+                        relative
+                        h-full
+                        w-full
 
-              {/* Product Info */}
-              <div className="relative z-10 mt-4 text-center lg:mt-5">
-                <h3 className="font-serif text-lg font-semibold text-[var(--brand-text-dark)] sm:text-2xl">
-                  {cake.name}
-                </h3>
+                        ${
+                          index === 1
+                            ? "scale-[0.82] lg:scale-[0.84]"
+                            : "scale-100"
+                        }
+                      `}
+                    >
+                      <Image
+                        src={cake.image}
+                        alt={cake.name}
+                        fill
+                        className="
+                          object-contain
+                          object-center
+                          drop-shadow-[0_18px_30px_rgba(76,28,28,0.12)]
+                        "
+                        sizes="(max-width: 1024px) 50vw, 33vw"
+                      />
+                    </motion.div>
+                  </Link>
 
-                <p className="mt-1 text-[11px] text-[var(--brand-muted)] sm:text-sm">
-                  {cake.description}
-                </p>
+                  {/* Info */}
+                  <div className="relative z-10 mt-4 text-center lg:mt-5">
+                    <Link
+                      href={`/order/${cake.slug}`}
+                    >
+                      <h3 className="font-serif text-lg font-semibold text-[var(--brand-text-dark)] transition-colors hover:text-[var(--brand-primary)] sm:text-2xl">
+                        {cake.name}
+                      </h3>
+                    </Link>
 
-                <p className="mt-2 text-base font-bold text-[var(--brand-primary)] sm:text-xl">
-                  AED {cake.price}
-                </p>
+                    <p className="mt-1 text-[11px] text-[var(--brand-muted)] sm:text-sm">
+                      {cake.description}
+                    </p>
 
-                <Link
-                  href={`/order/${cake.slug}`}
-                  className="
-                    mt-3
-                    inline-flex
-                    min-w-[135px]
-                    items-center
-                    justify-center
-                    gap-2
-                    rounded-full
-                    bg-[var(--brand-primary)]
-                    px-5
-                    py-2.5
-                    text-xs
-                    font-medium
-                    text-white
-                    transition
-                    duration-300
+                    <p className="mt-2 text-base font-bold text-[var(--brand-primary)] sm:text-xl">
+                      AED {cake.price}
+                    </p>
 
-                    hover:-translate-y-0.5
-                    hover:bg-[var(--brand-primary-dark)]
-
-                    sm:min-w-[160px]
-                    sm:px-6
-                    sm:py-3
-                    sm:text-sm
-                  "
-                >
-                  Order Now
-                  <ArrowRight size={15} />
-                </Link>
-              </div>
-            </motion.article>
-          ))}
+                    {/* Add to bag */}
+                    <div className="mt-4 flex justify-center">
+                      <Button
+                        type="button"
+                        variant={
+                          added
+                            ? "secondary"
+                            : "primary"
+                        }
+                        size="md"
+                        iconLeft={
+                          added ? (
+                            <Check size={16} />
+                          ) : (
+                            <ShoppingBag
+                              size={16}
+                            />
+                          )
+                        }
+                        onClick={() =>
+                          handleAddToCart(cake)
+                        }
+                        className="
+                          min-w-[150px]
+                          whitespace-nowrap
+                          px-4
+                          text-[9px]
+                          min-[380px]:min-w-[165px]
+                          min-[380px]:text-[10px]
+                          sm:min-w-[180px]
+                          sm:px-6
+                          sm:text-xs
+                        "
+                      >
+                        {added
+                          ? "Added to Bag"
+                          : "Add to Bag"}
+                      </Button>
+                    </div>
+                  </div>
+                </motion.article>
+              );
+            }
+          )}
         </motion.div>
 
-        {/* Bottom Brand Line */}
+        {/* Brand line */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
