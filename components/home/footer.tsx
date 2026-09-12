@@ -116,7 +116,7 @@ export default function Footer() {
             lg:text-[28px]
           "
         >
-          A Slice of Happiness
+          A Slice Of Happiness
         </motion.p>
 
         {/* Social + Contact */}

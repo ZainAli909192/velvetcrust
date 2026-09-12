@@ -120,9 +120,7 @@ export default function Hero() {
             "
           >
             A Slice Of{" "}
-            <span className="text-black">
               Happiness
-            </span>
           </motion.h1>
 
           {/* Description */}

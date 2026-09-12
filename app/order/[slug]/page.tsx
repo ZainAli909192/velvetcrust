@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cheesecakes } from "@/data/cheesecakes";
 import OrderCheckout from "@/components/order/order-checkout";
 import Header from "@/components/home/header";
+import Footer from "@/components/home/footer";
 
 type OrderPageProps = {
   params: Promise<{
@@ -27,6 +28,7 @@ export default async function OrderPage({
     <>
     <Header />
       <OrderCheckout cheesecake={cheesecake} />
+      <Footer />
     </>
   );
 }

@@ -10,6 +10,7 @@ import {
   UserRound,
   ShoppingBag,
 } from "lucide-react";
+
 import { useCart } from "@/components/store/cart-context";
 
 const links = [
@@ -38,16 +39,13 @@ const links = [
 export default function Header() {
   const pathname = usePathname();
   const { totalItems } = useCart();
+
   const [scrolled, setScrolled] = useState(false);
 
   const isHomePage = pathname === "/";
 
-  /*
-   * Header should have a solid background when:
-   * 1. User is not on homepage
-   * 2. User has scrolled on homepage
-   */
-  const showBackground = !isHomePage || scrolled;
+  const showDesktopBackground =
+    !isHomePage || scrolled;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,7 +59,10 @@ export default function Header() {
     });
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
     };
   }, []);
 
@@ -74,17 +75,18 @@ export default function Header() {
         top-0
         z-50
         w-full
+        bg-transparent
         transition-all
         duration-500
 
         ${
-          showBackground
+          showDesktopBackground
             ? `
-              bg-[var(--brand-background)]/95
-              shadow-[0_8px_30px_rgba(50,23,22,0.08)]
-              backdrop-blur-xl
+              lg:bg-[var(--brand-background)]/95
+              lg:shadow-[0_8px_30px_rgba(50,23,22,0.08)]
+              lg:backdrop-blur-xl
             `
-            : "bg-transparent"
+            : ""
         }
       `}
     >
@@ -103,10 +105,12 @@ export default function Header() {
           lg:px-16
           xl:px-24
 
+          h-24
+
           ${
-            showBackground
-              ? "h-20 lg:h-[92px]"
-              : "h-24 lg:h-32"
+            showDesktopBackground
+              ? "lg:h-[92px]"
+              : "lg:h-32"
           }
         `}
       >
@@ -120,37 +124,29 @@ export default function Header() {
             src="/images/logo3.png"
             alt="Velvet Crust"
             width={150}
-            height={150} 
+            height={150}
             priority
             className={`
-             ${
-            showBackground
-            ?"" : "mt-5"
-             }
+              mt-3
+              h-[82px]
+              w-[82px]
               rounded-full
               object-center
               transition-all
               duration-500
 
+              sm:h-[95px]
+              sm:w-[95px]
+
               ${
-                showBackground
+                showDesktopBackground
                   ? `
-                    h-[66px]
-                    w-[66px]
-
-                    sm:h-[72px]
-                    sm:w-[72px]
-
+                    lg:mt-0
                     lg:h-[82px]
                     lg:w-[82px]
                   `
                   : `
-                    h-[82px]
-                    w-[82px]
-
-                    sm:h-[95px]
-                    sm:w-[95px]
-
+                    lg:mt-5
                     lg:h-[130px]
                     lg:w-[130px]
                   `
@@ -182,18 +178,16 @@ export default function Header() {
                   rounded-full
                   px-4
                   py-2.5
-
                   text-sm
                   font-medium
                   uppercase
                   tracking-[0.11em]
-
                   transition-all
                   duration-300
 
                   ${
                     isActive
-                      ? showBackground
+                      ? showDesktopBackground
                         ? `
                           bg-[var(--brand-primary-soft)]
                           text-[var(--brand-primary)]
@@ -202,7 +196,7 @@ export default function Header() {
                           bg-[var(--brand-cream)]
                           text-[var(--brand-primary)]
                         `
-                      : showBackground
+                      : showDesktopBackground
                         ? `
                           text-[var(--brand-text)]
                           hover:bg-[var(--brand-primary-soft)]
@@ -219,19 +213,43 @@ export default function Header() {
                 <span className="relative">
                   <Icon
                     size={17}
-                    strokeWidth={isActive ? 2.3 : 1.7}
+                    strokeWidth={
+                      isActive ? 2.3 : 1.7
+                    }
                     className="transition-transform duration-300 group-hover:scale-105"
                   />
-                  {link.href === "/cart" && totalItems > 0 && (
-                    <span className="absolute -right-3 -top-3 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[var(--brand-primary)] px-1 text-[8px] font-bold text-white ring-2 ring-[var(--brand-background)]">
-                      {totalItems > 99 ? "99+" : totalItems}
-                    </span>
-                  )}
+
+                  {link.href === "/cart" &&
+                    totalItems > 0 && (
+                      <span
+                        className="
+                          absolute
+                          -right-3
+                          -top-3
+                          flex
+                          h-[17px]
+                          min-w-[17px]
+                          items-center
+                          justify-center
+                          rounded-full
+                          bg-[var(--brand-primary)]
+                          px-1
+                          text-[8px]
+                          font-bold
+                          text-white
+                          ring-2
+                          ring-[var(--brand-background)]
+                        "
+                      >
+                        {totalItems > 99
+                          ? "99+"
+                          : totalItems}
+                      </span>
+                    )}
                 </span>
 
                 <span>{link.label}</span>
 
-                {/* Active Indicator */}
                 {isActive && (
                   <span
                     className="

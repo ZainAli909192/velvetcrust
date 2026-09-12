@@ -25,7 +25,7 @@ export default function OrderCheckout({
   cheesecake,
 }: Props) {
   return (
-    <section className=" mt-10 min-h-screen px-4 pb-28 bg-white pt-20 sm:px-8 lg:px-12 lg:pb-16">
+    <section className=" mt-10 min-h-[60vh] px-4 pb-28 bg-white pt-20 sm:px-8 lg:px-12 lg:pb-16">
       <div className="mx-auto max-w-[1450px]">
         {/* Top */}
         <div className="flex items-center justify-between border-b border-[var(--brand-border)] pb-5">
