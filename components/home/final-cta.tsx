@@ -294,7 +294,7 @@ export default function FinalCTA() {
             <Link
               href="#home"
               className="
-                mt-7
+                mt-3
                 inline-flex
                 items-center
                 gap-3

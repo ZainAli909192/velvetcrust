@@ -117,9 +117,12 @@ export default function AuthPanel({
 
       {/* Heading */}
       <div className="mt-7">
-        
-
-       
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--brand-primary)]">
+          {checkout ? "Account required" : mode === "login" ? "Welcome back" : "Join Velvet Crust"}
+        </p>
+        <h1 className="mt-2 font-serif text-3xl text-[var(--brand-text-dark)]">
+          {mode === "login" ? "Sign in to your account." : "Create your account."}
+        </h1>
       </div>
 
       {/* Form */}
@@ -196,14 +199,16 @@ export default function AuthPanel({
             className="w-full bg-transparent text-base text-[var(--brand-text-dark)] outline-none placeholder:text-[var(--brand-muted)]/60"
           />
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() =>
               setShowPassword(
                 (current) => !current
               )
             }
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--brand-muted)] transition hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"
+            className="h-11 w-11 shrink-0 text-[var(--brand-muted)]"
             aria-label={
               showPassword
                 ? "Hide password"
@@ -215,7 +220,7 @@ export default function AuthPanel({
             ) : (
               <Eye size={17} />
             )}
-          </button>
+          </Button>
         </AuthField>
 
         {mode === "signup" && (
@@ -298,22 +303,18 @@ function ModeButton({
   children: React.ReactNode;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={onClick}
       className={`
         min-h-11
-        rounded-full
         px-3
         text-[11px]
         font-semibold
         uppercase
         tracking-[0.1em]
-        transition
-        focus-visible:outline-none
-        focus-visible:ring-2
-        focus-visible:ring-[var(--brand-primary)]
-
         ${
           active
             ? "bg-[var(--brand-primary)] text-white shadow-sm"
@@ -322,7 +323,7 @@ function ModeButton({
       `}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 

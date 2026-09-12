@@ -7,6 +7,7 @@ import {
   X,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import Button from "@/components/ui/button";
 
 export type ToastType =
   | "success"
@@ -128,26 +129,21 @@ export default function Toast({
         )}
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={onClose}
         aria-label="Close notification"
         className="
-          flex
           h-8
           w-8
           shrink-0
-          items-center
-          justify-center
-          rounded-full
           text-[var(--brand-muted)]
-          transition
-          hover:bg-[var(--brand-primary-soft)]
-          hover:text-[var(--brand-primary)]
         "
       >
         <X size={15} />
-      </button>
+      </Button>
     </motion.div>
   );
 }

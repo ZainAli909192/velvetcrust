@@ -146,62 +146,69 @@ export default function CartPage() {
                     {/* Quantity */}
 
                     <div className="flex items-center rounded-full border border-[var(--brand-border)]">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() =>
                           decreaseQuantity(
                             item.id
                           )
                         }
-                        className="flex h-9 w-9 items-center justify-center text-[var(--brand-primary)]"
+                        className="h-9 w-9"
                         aria-label="Decrease quantity"
                       >
                         <Minus size={14} />
-                      </button>
+                      </Button>
 
                       <span className="min-w-8 text-center text-sm font-semibold">
                         {item.quantity}
                       </span>
 
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon"
                         onClick={() =>
                           increaseQuantity(
                             item.id
                           )
                         }
-                        className="flex h-9 w-9 items-center justify-center text-[var(--brand-primary)]"
+                        className="h-9 w-9"
                         aria-label="Increase quantity"
                       >
                         <Plus size={14} />
-                      </button>
+                      </Button>
                     </div>
 
                     {/* Remove */}
 
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() =>
                         removeItem(item.id)
                       }
-                      className="flex items-center gap-1.5 text-xs text-[var(--brand-muted)] transition hover:text-[var(--brand-primary)]"
+                      iconLeft={<Trash2 size={14} />}
+                      className="px-3 text-[var(--brand-muted)]"
                     >
-                      <Trash2 size={14} />
-
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </article>
             ))}
 
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={clearCart}
-              className="text-xs font-medium text-[var(--brand-muted)] underline underline-offset-4 transition hover:text-[var(--brand-primary)]"
+              className="text-[var(--brand-muted)] underline underline-offset-4"
             >
               Clear Cart
-            </button>
+            </Button>
           </div>
 
           {/* Summary */}

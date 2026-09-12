@@ -35,7 +35,7 @@ export default function AccountPage({ next }: { next?: string }) {
       <div className="mx-auto max-w-[1120px]">
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div><p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand-primary)]">My account</p><h1 className="mt-2 font-serif text-4xl text-[var(--brand-text-dark)] sm:text-5xl">Welcome, {user.name}.</h1><p className="mt-2 text-sm text-[var(--brand-muted)]">Manage your orders and continue where you left off.</p></div>
-          <button type="button" onClick={signOut} className="inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-[var(--brand-border)] px-4 text-sm text-[var(--brand-muted)] transition hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"><LogOut size={16} /> Sign out</button>
+          <Button type="button" variant="ghost" size="sm" onClick={signOut} iconLeft={<LogOut size={16} />} className="min-h-11 self-start border border-[var(--brand-border)] text-[var(--brand-muted)]">Sign out</Button>
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">

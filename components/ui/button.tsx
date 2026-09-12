@@ -84,6 +84,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 const baseClasses = `
   inline-flex
+  cursor-pointer
   items-center
   justify-center
   gap-2
@@ -95,6 +96,9 @@ const baseClasses = `
   duration-300
 
   hover:-translate-y-0.5
+  hover:shadow-[0_8px_22px_rgba(50,23,22,0.12)]
+  active:translate-y-0
+  active:shadow-none
 
   focus-visible:outline-none
   focus-visible:ring-2
