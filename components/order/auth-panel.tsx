@@ -310,15 +310,27 @@ function ModeButton({
       onClick={onClick}
       className={`
         min-h-11
+        rounded-full
         px-3
         text-[11px]
         font-semibold
         uppercase
         tracking-[0.1em]
+        transition-all
+        duration-300
+              bg-[var(--brand-primary)]
+
         ${
           active
-            ? "bg-[var(--brand-primary)] text-white shadow-sm"
-            : "text-[var(--brand-muted)] hover:text-[var(--brand-primary)]"
+            ? `
+              text-black
+              shadow-sm
+              hover:bg-[var(--brand-primary-dark)]
+            `
+            : `
+              hover:bg-[var(--brand-primary)]/25
+              hover:text-[var(--brand-primary)]
+            `
         }
       `}
     >
