@@ -42,7 +42,7 @@ export default function CartPage() {
           </div>
 
           <h1 className="mt-6 font-serif text-4xl text-[var(--brand-text-dark)]">
-            Your cart is empty.
+            Your Cart Is Empty.
           </h1>
 
           <p className="mt-3 max-w-sm text-sm leading-6 text-[var(--brand-muted)]">
