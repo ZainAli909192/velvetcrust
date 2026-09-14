@@ -26,7 +26,16 @@ export default function Hero() {
         controls={false}
         playsInline
         preload="auto"
-        className="absolute inset-0 h-full w-full object-cover object-center lg:hidden"
+        className="
+          absolute
+          inset-0
+          h-full
+          w-full
+          object-cover
+          object-center
+
+          lg:hidden
+        "
       >
         <source src="/mob-video.mp4" type="video/mp4" />
       </video>
@@ -39,7 +48,17 @@ export default function Hero() {
         controls={false}
         playsInline
         preload="auto"
-        className="absolute inset-0 hidden h-full w-full object-cover object-center lg:block"
+        className="
+          absolute
+          inset-0
+          hidden
+          h-full
+          w-full
+          object-cover
+          object-center
+
+          lg:block
+        "
       >
         <source src="/images/video.mp4" type="video/mp4" />
       </video>
@@ -51,6 +70,7 @@ export default function Hero() {
           inset-0
           z-[1]
           bg-[linear-gradient(90deg,rgba(255,248,237,0.93)_0%,rgba(255,248,237,0.76)_44%,rgba(255,248,237,0.23)_74%,rgba(255,248,237,0.03)_100%)]
+
           lg:hidden
         "
       />
@@ -67,6 +87,7 @@ export default function Hero() {
           w-[78%]
           bg-[radial-gradient(ellipse_at_left,rgba(255,248,237,0.72)_0%,rgba(255,248,237,0.35)_52%,transparent_82%)]
           blur-xl
+
           lg:hidden
         "
       />
@@ -82,6 +103,7 @@ export default function Hero() {
           from-[#FFF7EA]/95
           via-[#FFF7EA]/55
           to-black/10
+
           lg:block
         "
       />
@@ -96,12 +118,12 @@ export default function Hero() {
         className="
           absolute
           left-0
-          top-[19%]
+          top-[23%]
           z-10
           w-full
           px-6
 
-          min-[390px]:top-[20%]
+          min-[390px]:top-[24%]
 
           sm:px-10
 
@@ -110,10 +132,7 @@ export default function Hero() {
       >
         <div className="w-full max-w-[390px]">
           {/* Heading */}
-          <motion.div
-            variants={fadeUp}
-            className="mt-5"
-          >
+          <motion.div variants={fadeUp}>
             <h1
               className="
                 font-serif
@@ -180,15 +199,9 @@ export default function Hero() {
             }}
             className="
               pointer-events-none
-              absolute
-              left-7
-              top-[210px]
-              z-[8]
-              hidden
+              mt-[120px]
               -rotate-[7deg]
               text-[#9F6749]/75
-
-              min-[390px]:block
             "
             style={{
               fontFamily:
@@ -206,92 +219,6 @@ export default function Hero() {
             <p className="ml-7 text-[20px] leading-none">
               Always ♡
             </p>
-          </motion.div>
-
-          {/* Features */}
-          <motion.div
-            variants={fadeUp}
-            className="
-              relative
-              mt-[250px]
-              grid
-              max-w-[350px]
-              grid-cols-3
-              items-start
-              gap-2
-              px-1
-
-              before:absolute
-              before:left-1/3
-              before:top-5
-              before:h-12
-              before:w-px
-              before:bg-[var(--brand-primary)]/12
-
-              after:absolute
-              after:right-1/3
-              after:top-5
-              after:h-12
-              after:w-px
-              after:bg-[var(--brand-primary)]/12
-            "
-          >
-            <MobileFeature
-              icon={<Leaf size={23} strokeWidth={1.55} />}
-              title="Premium"
-              subtitle="Ingredients"
-            />
-
-            <MobileFeature
-              icon={<ChefHat size={23} strokeWidth={1.55} />}
-              title="Homemade"
-              subtitle="With Love"
-            />
-
-            <MobileFeature
-              icon={<CakeSlice size={23} strokeWidth={1.55} />}
-              title="For Every"
-              subtitle="Occasion"
-            />
-          </motion.div>
-
-          {/* CTA */}
-          <motion.div
-            variants={fadeUp}
-            className="mt-9 flex justify-center hidden"
-          >
-            <Link
-              href="/#cheesecakes"
-              className="
-                inline-flex
-                min-h-[52px]
-                min-w-[220px]
-                items-center
-                justify-center
-                gap-4
-                rounded-full
-                bg-[var(--brand-primary)]
-                px-7
-                text-[12px]
-                font-semibold
-                uppercase
-                tracking-[0.2em]
-                text-white
-                shadow-[0_12px_30px_rgba(107,31,36,0.22)]
-                transition
-                duration-300
-mt-20 
-hidden 
-                active:scale-[0.98]
-              "
-            >
-              Order Now
-
-              <ArrowRight
-                size={17}
-                strokeWidth={1.7}
-              />
-            </Link>
           </motion.div>
         </div>
       </motion.div>
@@ -395,6 +322,7 @@ hidden
               "
             >
               Order Now
+
               <ArrowRight size={17} />
             </Link>
           </motion.div>
@@ -425,7 +353,7 @@ hidden
         </div>
       </motion.div>
 
-      {/* Scroll indicator */}
+      {/* Desktop scroll indicator */}
       <motion.div
         initial={{
           opacity: 0,
@@ -473,75 +401,6 @@ type FeatureProps = {
   title: string;
   subtitle: string;
 };
-
-function MobileFeature({
-  icon,
-  title,
-  subtitle,
-}: FeatureProps) {
-  return (
-    <div className="flex min-w-0 flex-col items-center text-center hidden">
-      <div
-        className="
-          flex
-          h-[58px]
-          w-[58px]
-          items-center
-          justify-center
-          rounded-full
-          bg-[#FFF3EC]/95
-          text-[var(--brand-primary)]
-          shadow-[0_8px_24px_rgba(81,0,0,0.08)]
-          ring-1
-          ring-white/50
-          backdrop-blur-md
-        "
-      >
-        {icon}
-      </div>
-
-      <div
-        className="
-          mt-2
-          min-w-[92px]
-          rounded-xl
-          bg-[#FFF8F1]/90
-          px-2.5
-          py-2
-          shadow-[0_4px_18px_rgba(81,0,0,0.05)]
-          backdrop-blur-md
-        "
-      >
-        <p
-          className="
-            text-[10px]
-            font-semibold
-            uppercase
-            leading-[1.25]
-            tracking-[0.1em]
-            text-[var(--brand-primary)]
-          "
-        >
-          {title}
-        </p>
-
-        <p
-          className="
-            mt-0.5
-            text-[9px]
-            font-medium
-            uppercase
-            leading-[1.25]
-            tracking-[0.06em]
-            text-[var(--brand-primary)]/85
-          "
-        >
-          {subtitle}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function DesktopFeature({
   icon,
