@@ -33,12 +33,48 @@ export default function Hero() {
           w-full
           object-cover
           object-center
-
           lg:hidden
         "
       >
         <source src="/mob-video.mp4" type="video/mp4" />
       </video>
+
+      {/* Mobile brand overlay */}
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          z-[1]
+          bg-[#510000]/45
+          lg:hidden
+        "
+      />
+
+      {/* Mobile cinematic gradient */}
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          z-[2]
+          bg-[linear-gradient(to_bottom,rgba(15,0,0,0.00006)_100%,rgba(15,0,0,0.10)_92%,rgba(45,0,0,0.24)_105%,rgba(40,0,0,0.85)_70%,rgba(30,0,0,0.68)_100%)]
+          lg:hidden
+        "
+      />
+
+      {/* Mobile subtle left gradient */}
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          z-[2]
+          bg-[linear-gradient(90deg,rgba(15,0,0,0.18)_30%,rgba(5,0,0,0.06)_60%,transparent_100%)]
+         
+          lg:hidden
+        "
+      />
 
       {/* Desktop video */}
       <video
@@ -56,41 +92,11 @@ export default function Hero() {
           w-full
           object-cover
           object-center
-
           lg:block
         "
       >
         <source src="/images/video.mp4" type="video/mp4" />
       </video>
-
-      {/* Mobile overlay */}
-      <div
-        className="
-          absolute
-          inset-0
-          z-[1]
-          bg-[linear-gradient(90deg,rgba(255,248,237,0.93)_0%,rgba(255,248,237,0.76)_44%,rgba(255,248,237,0.23)_74%,rgba(255,248,237,0.03)_100%)]
-
-          lg:hidden
-        "
-      />
-
-      {/* Mobile soft glow */}
-      <div
-        className="
-          pointer-events-none
-          absolute
-          left-0
-          top-[15%]
-          z-[2]
-          h-[58%]
-          w-[78%]
-          bg-[radial-gradient(ellipse_at_left,rgba(255,248,237,0.72)_0%,rgba(255,248,237,0.35)_52%,transparent_82%)]
-          blur-xl
-
-          lg:hidden
-        "
-      />
 
       {/* Desktop overlay */}
       <div
@@ -103,7 +109,6 @@ export default function Hero() {
           from-[#FFF7EA]/95
           via-[#FFF7EA]/55
           to-black/10
-
           lg:block
         "
       />
@@ -117,108 +122,110 @@ export default function Hero() {
         animate="show"
         className="
           absolute
-          left-0
-          top-[23%]
+          inset-x-0
+          bottom-[17%]
           z-10
-          w-full
-          px-6
-
-          min-[390px]:top-[24%]
-
+          px-7
           sm:px-10
-
           lg:hidden
         "
       >
         <div className="w-full max-w-[390px]">
-          {/* Heading */}
-          <motion.div variants={fadeUp}>
-            <h1
-              className="
-                font-serif
-                text-[49px]
-                font-medium
-                leading-[0.88]
-                tracking-[-0.045em]
-                text-[var(--brand-primary)]
+          {/* Eyebrow */}
+          <motion.div
+            variants={fadeUp}
+            className="mb-5 flex items-center gap-3"
+          >
+            <span className="h-px w-7 bg-[#F2D7CA]/75" />
 
-                min-[380px]:text-[52px]
-                min-[430px]:text-[56px]
+            <p
+              className="
+                text-[9px]
+                font-semibold
+                uppercase
+                tracking-[0.3em]
+                text-[#F2D7CA]
               "
             >
-              A Slice Of
-            </h1>
-
-            <div className="relative -mt-1">
-              <span
-                className="
-                  block
-                  -rotate-[3deg]
-                  text-[66px]
-                  leading-[0.95]
-                  text-[#B56E42]
-
-                  min-[380px]:text-[72px]
-                  min-[430px]:text-[78px]
-                "
-                style={{
-                  fontFamily:
-                    '"Brush Script MT", "Segoe Script", cursive',
-                }}
-              >
-                Happiness
-              </span>
-
-              <span
-                className="
-                  absolute
-                  -bottom-2
-                  left-7
-                  h-px
-                  w-[72%]
-                  -rotate-[4deg]
-                  bg-[#B56E42]/70
-                "
-              />
-            </div>
+              Homemade Cheesecakes
+            </p>
           </motion.div>
 
-          {/* Decorative text */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 15,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              duration: 0.8,
-              delay: 0.8,
-            }}
+          {/* Heading */}
+          <motion.h1
+            variants={fadeUp}
             className="
-              pointer-events-none
-              mt-[120px]
-              -rotate-[7deg]
-              text-[#9F6749]/75
+              font-serif
+              text-[50px]
+              font-medium
+              leading-[0.9]
+              tracking-[-0.045em]
+              text-white
+
+              min-[375px]:text-[53px]
+              min-[410px]:text-[57px]
             "
-            style={{
-              fontFamily:
-                '"Brush Script MT", "Segoe Script", cursive',
-            }}
           >
-            <p className="text-[22px] leading-[0.9]">
-              Sweet
-            </p>
+            A Slice Of
 
-            <p className="ml-3 text-[24px] leading-[0.9]">
-              Moments
-            </p>
+            <span className="block text-[#F2D7CA]">
+              Happiness
+            </span>
+          </motion.h1>
 
-            <p className="ml-7 text-[20px] leading-none">
-              Always ♡
-            </p>
+          {/* Description */}
+          <motion.p
+            variants={fadeUp}
+            className="
+              mt-6
+              max-w-[350px]
+              text-[14px]
+              font-normal
+              leading-7
+              text-white/90
+
+              min-[390px]:text-[15px]
+            "
+          >
+            Crafted with premium ingredients, baked with love, and made for
+            life&apos;s sweet moments.
+          </motion.p>
+
+          {/* CTA */}
+          <motion.div variants={fadeUp}>
+            <Link
+              href="/#cheesecakes"
+              className="
+                mt-6
+                inline-flex
+                items-center
+                gap-3
+                rounded-full
+                border
+                border-white/25
+                bg-white
+                px-7
+                py-3.5
+
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.16em]
+                text-[#510000]
+
+                shadow-[0_12px_35px_rgba(0,0,0,0.18)]
+
+                transition
+                duration-300
+
+                hover:bg-[#FFF7EA]
+                active:scale-[0.97]
+              "
+            >
+              Order Now
+
+              <ArrowRight size={15} />
+            </Link>
           </motion.div>
         </div>
       </motion.div>
@@ -291,9 +298,8 @@ export default function Hero() {
               text-[#513632]
             "
           >
-            Crafted with premium ingredients,
-            baked with love, and made for life&apos;s
-            sweet moments.
+            Crafted with premium ingredients, baked with love, and made for
+            life&apos;s sweet moments.
           </motion.p>
 
           {/* CTA */}
@@ -309,11 +315,13 @@ export default function Hero() {
                 bg-[#861417]
                 px-8
                 py-4
+
                 text-sm
                 font-medium
                 uppercase
                 tracking-[0.14em]
                 text-white
+
                 transition
                 duration-300
 
@@ -380,7 +388,6 @@ export default function Hero() {
           -translate-x-1/2
           items-center
           gap-4
-
           lg:flex
         "
       >
