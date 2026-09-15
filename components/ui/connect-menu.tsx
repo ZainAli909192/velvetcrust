@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
-  Check,
-  Download,
-  FileText,
+  Handshake,
   Mail,
   Phone,
   Share2,
@@ -17,6 +16,7 @@ import {
 } from "framer-motion";
 
 import { contactDetails } from "@/lib/contact";
+import DownloadCompanyProfile from "./download-company-profile";
 
 type ConnectKind =
   | "whatsapp"
@@ -68,6 +68,7 @@ const menuVariants = {
       staggerDirection: -1,
     },
   },
+
   open: {
     opacity: 1,
     y: 0,
@@ -85,9 +86,10 @@ const menuVariants = {
 const itemVariants = {
   closed: {
     opacity: 0,
-    x: 10,
+    x: 12,
     y: 4,
   },
+
   open: {
     opacity: 1,
     x: 0,
@@ -145,27 +147,16 @@ function ConnectIcon({
 
 export function ConnectMenu() {
   const [open, setOpen] = useState(false);
-  const [downloading, setDownloading] =
-    useState(false);
-  const [downloadSuccess, setDownloadSuccess] =
-    useState(false);
-  const [downloadError, setDownloadError] =
-    useState(false);
-  const [progress, setProgress] = useState(0);
 
-  const containerRef =
-    useRef<HTMLDivElement>(null);
-  const triggerRef =
-    useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!open) return;
 
-    function handlePointerDown(
-      event: PointerEvent
-    ) {
+    function handlePointerDown(event: PointerEvent) {
       if (
         !containerRef.current?.contains(
           event.target as Node
@@ -175,9 +166,7 @@ export function ConnectMenu() {
       }
     }
 
-    function handleEscape(
-      event: KeyboardEvent
-    ) {
+    function handleEscape(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
 
       setOpen(false);
@@ -207,224 +196,78 @@ export function ConnectMenu() {
     };
   }, [open]);
 
-  async function downloadCompanyProfile() {
-    if (downloading) return;
-
-    setOpen(false);
-    setDownloading(true);
-    setDownloadSuccess(false);
-    setDownloadError(false);
-    setProgress(12);
-
-    let progressTimer: ReturnType<
-      typeof setInterval
-    > | null = null;
-
-    try {
-      progressTimer = setInterval(() => {
-        setProgress((current) => {
-          if (current >= 85) return current;
-
-          return Math.min(
-            current + Math.floor(Math.random() * 8) + 3,
-            85
-          );
-        });
-      }, 180);
-
-      const response = await fetch(
-        "/companyprofile.pdf"
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          "Unable to download company profile."
-        );
-      }
-
-      const blob = await response.blob();
-
-      if (progressTimer) {
-        clearInterval(progressTimer);
-      }
-
-      setProgress(100);
-
-      const url = URL.createObjectURL(blob);
-      const anchor =
-        document.createElement("a");
-
-      anchor.href = url;
-      anchor.download =
-        "Velvet-Crust-Company-Profile.pdf";
-
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, 1000);
-
-      setTimeout(() => {
-        setDownloading(false);
-        setDownloadSuccess(true);
-      }, 450);
-
-      setTimeout(() => {
-        setDownloadSuccess(false);
-      }, 3800);
-    } catch (error) {
-      if (progressTimer) {
-        clearInterval(progressTimer);
-      }
-
-      console.error(error);
-
-      setDownloading(false);
-      setProgress(0);
-      setDownloadError(true);
-
-      setTimeout(() => {
-        setDownloadError(false);
-      }, 4000);
-    }
-  }
-
   return (
-    <>
-      <div
-        ref={containerRef}
-        className="
-          fixed
-              bottom-[calc(7.5rem+env(safe-area-inset-bottom))]
+    <div
+      ref={containerRef}
+      className="
+        fixed
+        bottom-[calc(7.5rem+env(safe-area-inset-bottom))]
+        right-4
+        z-[75]
+        flex
+        flex-col
+        items-end
+        gap-3
 
-    lg:bottom-[10%]
-          right-4
-          z-[75]
-          flex
-          flex-col
-          items-end
-          gap-3
-          sm:right-6
-          lg:right-8
-        "
-      >
-        {/* Menu */}
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              id="connect-actions"
-              role="group"
-              aria-label="Connect with Velvet Crust"
-              variants={
-                reducedMotion
-                  ? undefined
-                  : menuVariants
-              }
-              initial={
-                reducedMotion
-                  ? { opacity: 0 }
-                  : "closed"
-              }
-              animate={
-                reducedMotion
-                  ? { opacity: 1 }
-                  : "open"
-              }
-              exit={
-                reducedMotion
-                  ? { opacity: 0 }
-                  : "closed"
-              }
-              className="
-                origin-bottom-right
-                rounded-[22px]
-                border
-                border-[var(--brand-border)]
-                bg-[var(--brand-background)]/95
-                p-2
-                shadow-[0_20px_60px_rgba(81,0,0,0.18)]
-                backdrop-blur-xl
-              "
-            >
-              {connectItems.map((item) => (
-                <motion.a
-                  key={item.kind}
-                  href={item.href}
-                  target={
-                    item.external
-                      ? "_blank"
-                      : undefined
-                  }
-                  rel={
-                    item.external
-                      ? "noopener noreferrer"
-                      : undefined
-                  }
-                  onClick={() => setOpen(false)}
-                  variants={
-                    reducedMotion
-                      ? undefined
-                      : itemVariants
-                  }
-                  whileHover={
-                    reducedMotion
-                      ? undefined
-                      : { x: 3 }
-                  }
-                  whileTap={
-                    reducedMotion
-                      ? undefined
-                      : { scale: 0.98 }
-                  }
-                  className="
-                    group
-                    flex
-                    min-h-12
-                    min-w-[190px]
-                    items-center
-                    gap-3
-                    rounded-[14px]
-                    px-3
-                    text-sm
-                    font-semibold
-                    text-[var(--brand-text-dark)]
-                    outline-none
-                    transition-colors
-                    hover:bg-[var(--brand-primary-soft)]
-                    focus-visible:bg-[var(--brand-primary-soft)]
-                    focus-visible:ring-2
-                    focus-visible:ring-[var(--brand-primary)]
-                  "
-                >
-                  <span
-                    className="
-                      grid
-                      size-9
-                      shrink-0
-                      place-items-center
-                      rounded-full
-                      bg-[var(--brand-primary-soft)]
-                      text-[var(--brand-primary)]
-                      transition
-                      group-hover:bg-[var(--brand-primary)]
-                      group-hover:text-white
-                    "
-                  >
-                    <ConnectIcon
-                      kind={item.kind}
-                    />
-                  </span>
+        sm:right-6
 
-                  {item.label}
-                </motion.a>
-              ))}
-
-              {/* Company profile */}
-              <motion.button
-                type="button"
-                onClick={downloadCompanyProfile}
+        lg:bottom-[10%]
+        lg:right-8
+      "
+    >
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            id="connect-actions"
+            role="group"
+            aria-label="Connect with Velvet Crust"
+            variants={
+              reducedMotion
+                ? undefined
+                : menuVariants
+            }
+            initial={
+              reducedMotion
+                ? { opacity: 0 }
+                : "closed"
+            }
+            animate={
+              reducedMotion
+                ? { opacity: 1 }
+                : "open"
+            }
+            exit={
+              reducedMotion
+                ? { opacity: 0 }
+                : "closed"
+            }
+            className="
+              origin-bottom-right
+              overflow-hidden
+              rounded-[22px]
+              border
+              border-[var(--brand-border)]
+              bg-[var(--brand-background)]/95
+              p-2
+              shadow-[0_20px_60px_rgba(81,0,0,0.18)]
+              backdrop-blur-xl
+            "
+          >
+            {connectItems.map((item) => (
+              <motion.a
+                key={item.kind}
+                href={item.href}
+                target={
+                  item.external
+                    ? "_blank"
+                    : undefined
+                }
+                rel={
+                  item.external
+                    ? "noopener noreferrer"
+                    : undefined
+                }
+                onClick={() => setOpen(false)}
                 variants={
                   reducedMotion
                     ? undefined
@@ -444,22 +287,17 @@ export function ConnectMenu() {
                   group
                   flex
                   min-h-12
-                  w-full
-                  min-w-[190px]
+                  min-w-[210px]
                   items-center
                   gap-3
                   rounded-[14px]
                   px-3
-                  text-left
                   text-sm
                   font-semibold
                   text-[var(--brand-text-dark)]
                   outline-none
                   transition-colors
                   hover:bg-[var(--brand-primary-soft)]
-                  focus-visible:bg-[var(--brand-primary-soft)]
-                  focus-visible:ring-2
-                  focus-visible:ring-[var(--brand-primary)]
                 "
               >
                 <span
@@ -471,308 +309,210 @@ export function ConnectMenu() {
                     rounded-full
                     bg-[var(--brand-primary-soft)]
                     text-[var(--brand-primary)]
-                    transition
+                    transition-colors
                     group-hover:bg-[var(--brand-primary)]
                     group-hover:text-white
                   "
                 >
-                  <FileText
-                    size={18}
-                    strokeWidth={1.8}
-                  />
+                  <ConnectIcon kind={item.kind} />
                 </span>
 
-                <span className="flex flex-1 items-center justify-between gap-4">
-                  Company Profile
+                {item.label}
+              </motion.a>
+            ))}
 
-                  <Download
-                    size={14}
-                    className="text-[var(--brand-muted)]"
-                  />
-                </span>
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Connect button */}
-        <motion.button
-          ref={triggerRef}
-          type="button"
-          aria-expanded={open}
-          aria-controls="connect-actions"
-          onClick={() =>
-            setOpen((current) => !current)
-          }
-          whileHover={
-            reducedMotion
-              ? undefined
-              : { scale: 1.025 }
-          }
-          whileTap={
-            reducedMotion
-              ? undefined
-              : { scale: 0.96 }
-          }
-          transition={{
-            type: "spring",
-            stiffness: 400,
-            damping: 22,
-          }}
-          className="
-            inline-flex
-            min-h-12
-            cursor-pointer
-            items-center
-            gap-2.5
-            rounded-full
-            bg-[var(--brand-primary)]
-            px-5
-            font-semibold
-            text-white
-            shadow-[0_14px_38px_rgba(81,0,0,0.28)]
-            outline-none
-            transition-colors
-            hover:bg-[var(--brand-primary-dark)]
-            focus-visible:ring-2
-            focus-visible:ring-[var(--brand-primary)]
-            focus-visible:ring-offset-2
-          "
-        >
-          <span className="relative grid size-5 place-items-center">
-            <AnimatePresence
-              mode="wait"
-              initial={false}
+            <motion.div
+              variants={
+                reducedMotion
+                  ? undefined
+                  : itemVariants
+              }
             >
-              {open ? (
-                <motion.span
-                  key="close"
-                  initial={{
-                    opacity: 0,
-                    rotate: -90,
-                    scale: 0.7,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    rotate: 0,
-                    scale: 1,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    rotate: 90,
-                    scale: 0.7,
-                  }}
-                  transition={{
-                    duration: 0.16,
-                  }}
-                  className="absolute"
-                >
-                  <X size={20} />
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="share"
-                  initial={{
-                    opacity: 0,
-                    rotate: 90,
-                    scale: 0.7,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    rotate: 0,
-                    scale: 1,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    rotate: -90,
-                    scale: 0.7,
-                  }}
-                  transition={{
-                    duration: 0.16,
-                  }}
-                  className="absolute"
-                >
-                  <Share2 size={20} />
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </span>
-
-          {open ? "Close" : "Connect"}
-        </motion.button>
-      </div>
-
-      {/* Download status */}
-      <AnimatePresence>
-        {downloading && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 24,
-              scale: 0.96,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scale: 1,
-            }}
-            exit={{
-              opacity: 0,
-              y: 15,
-              scale: 0.97,
-            }}
-            className="
-              fixed
-              bottom-15
-              left-1/2
-              z-[100]
-              w-[calc(100%-2rem)]
-              max-w-[390px]
-              -translate-x-1/2
-              rounded-[20px]
-              bg-[var(--brand-background)]
-              p-4
-              shadow-[0_20px_60px_rgba(81,0,0,0.20)]
-            "
-          >
-            <div className="flex items-center gap-3">
-              <div
+              <Link
+                href="/collaborate"
+                onClick={() => setOpen(false)}
                 className="
-                  grid
-                  size-11
-                  shrink-0
-                  place-items-center
-                  rounded-full
-                  bg-[var(--brand-primary-soft)]
-                  text-[var(--brand-primary)]
+                  group
+                  flex
+                  min-h-12
+                  min-w-[210px]
+                  items-center
+                  gap-3
+                  rounded-[14px]
+                  px-3
+                  text-sm
+                  font-semibold
+                  text-[var(--brand-text-dark)]
+                  outline-none
+                  transition-colors
+                  hover:bg-[var(--brand-primary-soft)]
                 "
               >
-                <FileText size={20} />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--brand-text-dark)]">
-                      Downloading Company Profile
-                    </p>
-
-                    <p className="mt-0.5 text-xs text-[var(--brand-muted)]">
-                      Velvet Crust PDF
-                    </p>
-                  </div>
-
-                  <span className="text-xs font-semibold tabular-nums text-[var(--brand-primary)]">
-                    {progress}%
-                  </span>
-                </div>
-
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--brand-primary-soft)]">
-                  <motion.div
-                    animate={{
-                      width: `${progress}%`,
-                    }}
-                    transition={{
-                      duration: 0.2,
-                      ease: "easeOut",
-                    }}
-                    className="h-full rounded-full bg-[var(--brand-primary)]"
+                <span
+                  className="
+                    grid
+                    size-9
+                    shrink-0
+                    place-items-center
+                    rounded-full
+                    bg-[var(--brand-primary-soft)]
+                    text-[var(--brand-primary)]
+                    transition-colors
+                    group-hover:bg-[var(--brand-primary)]
+                    group-hover:text-white
+                  "
+                >
+                  <Handshake
+                    size={18}
+                    strokeWidth={1.7}
                   />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
+                </span>
 
-        {downloadSuccess && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 24,
-              scale: 0.96,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scale: 1,
-            }}
-            exit={{
-              opacity: 0,
-              y: 15,
-              scale: 0.97,
-            }}
-            className="
-              fixed
-              bottom-15
-              left-1/2
-              z-[100]
-              flex
-              w-[calc(100%-2rem)]
-              max-w-[370px]
-              -translate-x-1/2
-              items-center
-              gap-3
-              rounded-[18px]
-              bg-[var(--brand-primary)]
-              px-4
-              py-3.5
-              text-white
-              shadow-[0_18px_50px_rgba(81,0,0,0.28)]
-            "
-          >
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/15">
-              <Check size={19} />
-            </span>
+                <span className="flex flex-col">
+                  <span>Collaborate With Us</span>
 
-            <div>
-              <p className="text-sm font-semibold">
-                Download complete
-              </p>
+                  <span
+                    className="
+                      mt-0.5
+                      text-[10px]
+                      font-normal
+                      text-[var(--brand-muted)]
+                    "
+                  >
+                    Brands, events & partnerships
+                  </span>
+                </span>
+              </Link>
+            </motion.div>
 
-              <p className="mt-0.5 text-xs text-white/75">
-                Company profile downloaded successfully.
-              </p>
-            </div>
-          </motion.div>
-        )}
+            <div
+              className="
+                mx-3
+                my-1.5
+                h-px
+                bg-[var(--brand-border)]
+              "
+            />
 
-        {downloadError && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 20,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            exit={{
-              opacity: 0,
-              y: 15,
-            }}
-            className="
-              fixed
-              bottom-20
-              left-1/2
-              z-[100]
-              w-[calc(100%-2rem)]
-              max-w-[370px]
-              -translate-x-1/2
-              rounded-[18px]
-              bg-[var(--brand-primary)]
-              px-5
-              py-4
-              text-sm
-              font-medium
-              text-white
-              shadow-xl
-            "
-          >
-            Unable to download the company profile.
-            Please try again.
+            <motion.div
+              variants={
+                reducedMotion
+                  ? undefined
+                  : itemVariants
+              }
+            >
+              <DownloadCompanyProfile
+                onStart={() => setOpen(false)}
+              />
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+
+      <motion.button
+        ref={triggerRef}
+        type="button"
+        aria-expanded={open}
+        aria-controls="connect-actions"
+        onClick={() =>
+          setOpen((current) => !current)
+        }
+        whileHover={
+          reducedMotion
+            ? undefined
+            : { scale: 1.025 }
+        }
+        whileTap={
+          reducedMotion
+            ? undefined
+            : { scale: 0.96 }
+        }
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 22,
+        }}
+        className="
+          inline-flex
+          min-h-12
+          cursor-pointer
+          items-center
+          gap-2.5
+          rounded-full
+          bg-[var(--brand-primary)]
+          px-5
+          font-semibold
+          text-white
+          shadow-[0_14px_38px_rgba(81,0,0,0.28)]
+          outline-none
+          transition-colors
+          hover:bg-[var(--brand-primary-dark)]
+          focus-visible:ring-2
+          focus-visible:ring-[var(--brand-primary)]
+          focus-visible:ring-offset-2
+        "
+      >
+        <span className="relative grid size-5 place-items-center">
+          <AnimatePresence
+            mode="wait"
+            initial={false}
+          >
+            {open ? (
+              <motion.span
+                key="close"
+                initial={{
+                  opacity: 0,
+                  rotate: -90,
+                  scale: 0.7,
+                }}
+                animate={{
+                  opacity: 1,
+                  rotate: 0,
+                  scale: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                  rotate: 90,
+                  scale: 0.7,
+                }}
+                transition={{
+                  duration: 0.16,
+                }}
+                className="absolute"
+              >
+                <X size={20} />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="share"
+                initial={{
+                  opacity: 0,
+                  rotate: 90,
+                  scale: 0.7,
+                }}
+                animate={{
+                  opacity: 1,
+                  rotate: 0,
+                  scale: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                  rotate: -90,
+                  scale: 0.7,
+                }}
+                transition={{
+                  duration: 0.16,
+                }}
+                className="absolute"
+              >
+                <Share2 size={20} />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
+
+        {open ? "Close" : "Connect"}
+      </motion.button>
+    </div>
   );
 }

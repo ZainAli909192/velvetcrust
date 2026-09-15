@@ -9,6 +9,7 @@ import {
   BookOpen,
   UserRound,
   ShoppingBag,
+  Handshake
 } from "lucide-react";
 
 import { useCart } from "@/components/store/cart-context";
@@ -33,6 +34,11 @@ const links = [
     label: "Cart",
     href: "/cart",
     icon: ShoppingBag,
+  },
+   {
+    label: "Collaborate",
+    href: "/collaborate",
+    icon: Handshake,
   },
 ];
 

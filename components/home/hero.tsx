@@ -18,6 +18,7 @@ import {
 export default function Hero() {
   return (
     <section className="relative min-h-[100dvh] w-full overflow-hidden">
+
       {/* Mobile video */}
       <video
         autoPlay
@@ -36,42 +37,65 @@ export default function Hero() {
           lg:hidden
         "
       >
-        <source src="/mob-video.mp4" type="video/mp4" />
+        <source
+          src="/mob-video.mp4"
+          type="video/mp4"
+        />
       </video>
 
-      {/* Mobile brand overlay */}
+      {/* Mobile soft brand tint */}
       <div
         className="
           pointer-events-none
           absolute
           inset-0
           z-[1]
-          bg-[#510000]/45
+          bg-[#510000]/16
           lg:hidden
         "
       />
 
-      {/* Mobile cinematic gradient */}
+      {/* Mobile warm cream light */}
       <div
         className="
           pointer-events-none
           absolute
           inset-0
           z-[2]
-          bg-[linear-gradient(to_bottom,rgba(15,0,0,0.00006)_100%,rgba(15,0,0,0.10)_92%,rgba(45,0,0,0.24)_105%,rgba(40,0,0,0.85)_70%,rgba(30,0,0,0.68)_100%)]
+          bg-[linear-gradient(to_bottom,rgba(255,247,234,0.06)_0%,rgba(255,247,234,0.03)_30%,rgba(70,18,18,0.05)_60%,rgba(45,8,8,0.20)_100%)]
           lg:hidden
         "
       />
 
-      {/* Mobile subtle left gradient */}
+      {/* Mobile text readability glow */}
       <div
         className="
           pointer-events-none
           absolute
-          inset-0
+          -left-[20%]
+          bottom-[7%]
           z-[2]
-          bg-[linear-gradient(90deg,rgba(15,0,0,0.18)_30%,rgba(5,0,0,0.06)_60%,transparent_100%)]
-         
+          h-[66%]
+          w-[105%]
+          bg-[radial-gradient(ellipse_at_left_center,rgba(255,244,229,0.28)_0%,rgba(255,238,220,0.14)_42%,transparent_73%)]
+          blur-[10px]
+          lg:hidden
+        "
+      />
+
+      {/* Mobile bottom depth */}
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-x-0
+          bottom-0
+          z-[2]
+          h-[35%]
+          bg-gradient-to-t
+          from-[#300606]/30
+          via-[#510000]/8
+          to-transparent
           lg:hidden
         "
       />
@@ -95,7 +119,10 @@ export default function Hero() {
           lg:block
         "
       >
-        <source src="/images/video.mp4" type="video/mp4" />
+        <source
+          src="/images/video.mp4"
+          type="video/mp4"
+        />
       </video>
 
       {/* Desktop overlay */}
@@ -123,20 +150,20 @@ export default function Hero() {
         className="
           absolute
           inset-x-0
-          bottom-[17%]
+          bottom-[18%]
           z-10
           px-7
           sm:px-10
           lg:hidden
         "
       >
-        <div className="w-full max-w-[390px]">
+        <div className="w-full max-w-[390px] -mt-20 ">
+
           {/* Eyebrow */}
           <motion.div
             variants={fadeUp}
             className="mb-5 flex items-center gap-3"
           >
-            <span className="h-px w-7 bg-[#F2D7CA]/75" />
 
             <p
               className="
@@ -144,7 +171,8 @@ export default function Hero() {
                 font-semibold
                 uppercase
                 tracking-[0.3em]
-                text-[#F2D7CA]
+                text-black
+                -mt-60
               "
             >
               Homemade Cheesecakes
@@ -155,41 +183,30 @@ export default function Hero() {
           <motion.h1
             variants={fadeUp}
             className="
+              max-w-[360px]
               font-serif
               text-[50px]
               font-medium
               leading-[0.9]
               tracking-[-0.045em]
               text-white
-
-              min-[375px]:text-[53px]
+ 
+              min-[375px]:text-[43px]
               min-[410px]:text-[57px]
+              relative
+                           top-[-105]
+                           text-[var(--brand-primary)] 
+
             "
-          >
+          > 
             A Slice Of
 
-            <span className="block text-[#F2D7CA]">
+            <span className="block text-[var(--brand-primary)]">
               Happiness
             </span>
           </motion.h1>
 
-          {/* Description */}
-          <motion.p
-            variants={fadeUp}
-            className="
-              mt-6
-              max-w-[350px]
-              text-[14px]
-              font-normal
-              leading-7
-              text-white/90
-
-              min-[390px]:text-[15px]
-            "
-          >
-            Crafted with premium ingredients, baked with love, and made for
-            life&apos;s sweet moments.
-          </motion.p>
+         
 
           {/* CTA */}
           <motion.div variants={fadeUp}>
@@ -199,21 +216,22 @@ export default function Hero() {
                 mt-6
                 inline-flex
                 items-center
-                gap-3
+                gap-5
                 rounded-full
                 border
-                border-white/25
-                bg-white
-                px-7
-                py-3.5
+                border-white/70
+                bg-white/95
+                px-8
+                py-4
 
                 text-[10px]
                 font-semibold
                 uppercase
-                tracking-[0.16em]
+                tracking-[0.17em]
                 text-[#510000]
 
-                shadow-[0_12px_35px_rgba(0,0,0,0.18)]
+                shadow-[0_12px_35px_rgba(0,0,0,0.14)]
+                backdrop-blur-sm
 
                 transition
                 duration-300
@@ -224,9 +242,28 @@ export default function Hero() {
             >
               Order Now
 
-              <ArrowRight size={15} />
+              <ArrowRight size={16} />
             </Link>
           </motion.div>
+
+           {/* Description */}
+          <motion.p
+            variants={fadeUp}
+            className="
+              mt-6
+              max-w-[355px]
+              text-[14px]
+              font-normal
+              leading-7
+              text-white/95
+
+              min-[390px]:text-[15px]
+            "
+          >
+            Crafted with premium ingredients,
+            baked with love, and made for
+            life&apos;s sweet moments.
+          </motion.p>
         </div>
       </motion.div>
 
@@ -250,23 +287,19 @@ export default function Hero() {
           pt-32
 
           lg:flex
-
           xl:px-24
         "
       >
         <div className="w-full max-w-[700px]">
+
           {/* Eyebrow */}
           <motion.div
             variants={fadeUp}
             className="mb-5 flex items-center gap-4"
           >
-            <span className="h-px w-10 bg-[#6E2527]" />
-
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#6E2527]">
               Homemade Cheesecakes
             </p>
-
-            <span className="h-px w-10 bg-[#6E2527]" />
           </motion.div>
 
           {/* Heading */}
@@ -298,7 +331,8 @@ export default function Hero() {
               text-[#513632]
             "
           >
-            Crafted with premium ingredients, baked with love, and made for
+            Crafted with premium ingredients,
+            baked with love, and made for
             life&apos;s sweet moments.
           </motion.p>
 
@@ -341,19 +375,34 @@ export default function Hero() {
             className="mt-10 grid max-w-[520px] grid-cols-3 gap-7"
           >
             <DesktopFeature
-              icon={<Leaf size={25} strokeWidth={1.5} />}
+              icon={
+                <Leaf
+                  size={25}
+                  strokeWidth={1.5}
+                />
+              }
               title="Premium"
               subtitle="Ingredients"
             />
 
             <DesktopFeature
-              icon={<ChefHat size={26} strokeWidth={1.5} />}
+              icon={
+                <ChefHat
+                  size={26}
+                  strokeWidth={1.5}
+                />
+              }
               title="Homemade"
               subtitle="With Love"
             />
 
             <DesktopFeature
-              icon={<CakeSlice size={26} strokeWidth={1.5} />}
+              icon={
+                <CakeSlice
+                  size={26}
+                  strokeWidth={1.5}
+                />
+              }
               title="For Every"
               subtitle="Occasion"
             />
@@ -388,6 +437,7 @@ export default function Hero() {
           -translate-x-1/2
           items-center
           gap-4
+
           lg:flex
         "
       >
