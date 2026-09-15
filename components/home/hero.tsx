@@ -191,14 +191,14 @@ export default function Hero() {
               tracking-[-0.045em]
               text-white
  
-              min-[375px]:text-[43px]
-              min-[410px]:text-[57px]
+              min-[375px]:text-[38px]
+              min-[410px]:text-[37px]
               relative
                            top-[-105]
                            text-[var(--brand-primary)] 
 
             "
-          > 
+          >  
             A Slice Of
 
             <span className="block text-[var(--brand-primary)]">
