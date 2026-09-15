@@ -207,45 +207,6 @@ export default function Hero() {
           </motion.h1>
 
          
-
-          {/* CTA */}
-          <motion.div variants={fadeUp}>
-            <Link
-              href="/#cheesecakes"
-              className="
-                mt-6
-                inline-flex
-                items-center
-                gap-5
-                rounded-full
-                border
-                border-white/70
-                bg-white/95
-                px-8
-                py-4
-
-                text-[10px]
-                font-semibold
-                uppercase
-                tracking-[0.17em]
-                text-[#510000]
-
-                shadow-[0_12px_35px_rgba(0,0,0,0.14)]
-                backdrop-blur-sm
-
-                transition
-                duration-300
-
-                hover:bg-[#FFF7EA]
-                active:scale-[0.97]
-              "
-            >
-              Order Now
-
-              <ArrowRight size={16} />
-            </Link>
-          </motion.div>
-
            {/* Description */}
           <motion.p
             variants={fadeUp}
@@ -264,6 +225,44 @@ export default function Hero() {
             baked with love, and made for
             life&apos;s sweet moments.
           </motion.p>
+
+          {/* CTA */}
+          <motion.div variants={fadeUp}>
+            <Link
+              href="/#cheesecakes"
+              className="
+                mt-6
+                inline-flex
+                items-center
+                gap-5
+                rounded-full
+                border
+                border-white/70
+                bg-white/95
+                px-5
+                py-4
+
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.17em]
+                text-[#510000]
+
+                shadow-[0_12px_35px_rgba(0,0,0,0.14)]
+                backdrop-blur-sm
+
+                transition
+                duration-300
+                hover:bg-[#FFF7EA]
+                active:scale-[0.97]
+              "
+            >
+              Order Now
+
+              <ArrowRight size={16} />
+            </Link>
+          </motion.div>
+
         </div>
       </motion.div>
 
