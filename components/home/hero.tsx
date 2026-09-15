@@ -172,7 +172,7 @@ export default function Hero() {
                 uppercase
                 tracking-[0.3em]
                 text-black
-                -mt-60
+                -mt-70
               "
             >
               Homemade Cheesecakes
@@ -194,7 +194,7 @@ export default function Hero() {
               min-[375px]:text-[38px]
               min-[410px]:text-[37px]
               relative
-                           top-[-105]
+                           top-[-125]
                            text-[var(--brand-primary)] 
 
             "
