@@ -1,6 +1,8 @@
 "use client";
 
-import axios, { AxiosError } from "axios";
+import axios, {
+  AxiosError,
+} from "axios";
 import {
   createContext,
   useCallback,
@@ -54,7 +56,10 @@ type AuthResult = {
 type ApiErrorResponse = {
   success?: boolean;
   message?: string;
-  errors?: Record<string, string[]>;
+  errors?: Record<
+    string,
+    string[]
+  >;
 };
 
 type MeResponse = {
@@ -76,6 +81,10 @@ type AuthContextType = {
     data: RegisterData
   ) => Promise<AuthResult>;
 
+  googleLogin: (
+    credential: string
+  ) => Promise<AuthResult>;
+
   signOut: () => Promise<void>;
 
   refreshUser:
@@ -94,9 +103,9 @@ type AuthContextType = {
 };
 
 const AuthContext =
-  createContext<AuthContextType | undefined>(
-    undefined
-  );
+  createContext<
+    AuthContextType | undefined
+  >(undefined);
 
 const ORDERS_KEY =
   "velvet-crust-orders";
@@ -105,13 +114,15 @@ function getErrorMessage(
   error: unknown,
   fallback: string
 ) {
-  if (axios.isAxiosError(error)) {
+  if (
+    axios.isAxiosError(error)
+  ) {
     const axiosError =
       error as AxiosError<ApiErrorResponse>;
 
     return (
-      axiosError.response?.data?.message ??
-      fallback
+      axiosError.response?.data
+        ?.message ?? fallback
     );
   }
 
@@ -124,20 +135,25 @@ export function AuthProvider({
   children: React.ReactNode;
 }) {
   const [user, setUser] =
-    useState<Customer | null>(null);
+    useState<Customer | null>(
+      null
+    );
 
   const [orders, setOrders] =
-    useState<CustomerOrder[]>([]);
+    useState<CustomerOrder[]>(
+      []
+    );
 
-  const [isReady, setIsReady] =
-    useState(false);
+  const [
+    isReady,
+    setIsReady,
+  ] = useState(false);
 
   const [
     isAuthLoading,
     setIsAuthLoading,
   ] = useState(false);
 
-  // Restore orders
   useEffect(() => {
     try {
       const rawOrders =
@@ -152,7 +168,9 @@ export function AuthProvider({
       const parsed =
         JSON.parse(rawOrders);
 
-      if (Array.isArray(parsed)) {
+      if (
+        Array.isArray(parsed)
+      ) {
         setOrders(parsed);
       }
     } catch (error) {
@@ -163,7 +181,6 @@ export function AuthProvider({
     }
   }, []);
 
-  // Save orders
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -178,38 +195,43 @@ export function AuthProvider({
     }
   }, [orders]);
 
-  // Restore session
   const refreshUser =
-    useCallback(async (): Promise<Customer | null> => {
-      try {
-        const response =
-          await api.get<MeResponse>(
-            "/api/auth/me"
-          );
+    useCallback(
+      async (): Promise<Customer | null> => {
+        try {
+          const response =
+            await api.get<MeResponse>(
+              "/api/auth/me"
+            );
 
-        const customer =
-          response.data.customer ??
-          null;
+          const customer =
+            response.data
+              .customer ?? null;
 
-        setUser(customer);
+          setUser(customer);
 
-        return customer;
-      } catch (error) {
-        if (
-          axios.isAxiosError(error) &&
-          error.response?.status !== 401
-        ) {
-          console.error(
-            "Unable to restore session:",
-            error
-          );
+          return customer;
+        } catch (error) {
+          if (
+            axios.isAxiosError(
+              error
+            ) &&
+            error.response
+              ?.status !== 401
+          ) {
+            console.error(
+              "Unable to restore session:",
+              error
+            );
+          }
+
+          setUser(null);
+
+          return null;
         }
-
-        setUser(null);
-
-        return null;
-      }
-    }, []);
+      },
+      []
+    );
 
   useEffect(() => {
     let active = true;
@@ -237,7 +259,6 @@ export function AuthProvider({
     };
   }, [refreshUser]);
 
-  // Login
   const login = useCallback(
     async (
       data: LoginData
@@ -245,7 +266,8 @@ export function AuthProvider({
       if (isAuthLoading) {
         return {
           success: false,
-          message: "Please wait.",
+          message:
+            "Please wait.",
         };
       }
 
@@ -255,9 +277,10 @@ export function AuthProvider({
         await api.post(
           "/api/auth/login",
           {
-            email: data.email
-              .trim()
-              .toLowerCase(),
+            email:
+              data.email
+                .trim()
+                .toLowerCase(),
 
             password:
               data.password,
@@ -283,13 +306,16 @@ export function AuthProvider({
         return {
           success: false,
 
-          message: getErrorMessage(
-            error,
-            "Unable to sign in. Please try again."
-          ),
+          message:
+            getErrorMessage(
+              error,
+              "Unable to sign in. Please try again."
+            ),
         };
       } finally {
-        setIsAuthLoading(false);
+        setIsAuthLoading(
+          false
+        );
       }
     },
     [
@@ -298,87 +324,162 @@ export function AuthProvider({
     ]
   );
 
-  // Register
-  const register = useCallback(
-    async (
-      data: RegisterData
-    ): Promise<AuthResult> => {
-      if (isAuthLoading) {
-        return {
-          success: false,
-          message: "Please wait.",
-        };
-      }
-
-      setIsAuthLoading(true);
-
-      try {
-        const email =
-          data.email
-            .trim()
-            .toLowerCase();
-
-        await api.post(
-          "/api/auth/register",
-          {
-            name: data.name.trim(),
-
-            email,
-
-            phone:
-              data.phone?.trim() ||
-              undefined,
-
-            password:
-              data.password,
-          }
-        );
-
-        // Login after registration
-        await api.post(
-          "/api/auth/login",
-          {
-            email,
-            password:
-              data.password,
-          }
-        );
-
-        const customer =
-          await refreshUser();
-
-        if (!customer) {
+  const register =
+    useCallback(
+      async (
+        data: RegisterData
+      ): Promise<AuthResult> => {
+        if (isAuthLoading) {
           return {
             success: false,
             message:
-              "Account created, but sign in could not be completed.",
+              "Please wait.",
           };
         }
 
-        return {
-          success: true,
-          user: customer,
-        };
-      } catch (error) {
-        return {
-          success: false,
+        setIsAuthLoading(
+          true
+        );
 
-          message: getErrorMessage(
-            error,
-            "Unable to create account. Please try again."
-          ),
-        };
-      } finally {
-        setIsAuthLoading(false);
-      }
-    },
-    [
-      isAuthLoading,
-      refreshUser,
-    ]
-  );
+        try {
+          const email =
+            data.email
+              .trim()
+              .toLowerCase();
 
-  // Logout
+          await api.post(
+            "/api/auth/register",
+            {
+              name:
+                data.name.trim(),
+
+              email,
+
+              phone:
+                data.phone?.trim() ||
+                undefined,
+
+              password:
+                data.password,
+            }
+          );
+
+          await api.post(
+            "/api/auth/login",
+            {
+              email,
+              password:
+                data.password,
+            }
+          );
+
+          const customer =
+            await refreshUser();
+
+          if (!customer) {
+            return {
+              success: false,
+              message:
+                "Account created, but sign in could not be completed.",
+            };
+          }
+
+          return {
+            success: true,
+            user: customer,
+          };
+        } catch (error) {
+          return {
+            success: false,
+
+            message:
+              getErrorMessage(
+                error,
+                "Unable to create account. Please try again."
+              ),
+          };
+        } finally {
+          setIsAuthLoading(
+            false
+          );
+        }
+      },
+      [
+        isAuthLoading,
+        refreshUser,
+      ]
+    );
+
+  const googleLogin =
+    useCallback(
+      async (
+        credential: string
+      ): Promise<AuthResult> => {
+        if (isAuthLoading) {
+          return {
+            success: false,
+            message:
+              "Please wait.",
+          };
+        }
+
+        if (!credential) {
+          return {
+            success: false,
+            message:
+              "Google authentication failed.",
+          };
+        }
+
+        setIsAuthLoading(
+          true
+        );
+
+        try {
+          await api.post(
+            "/api/auth/google",
+            {
+              credential,
+            }
+          );
+
+          const customer =
+            await refreshUser();
+
+          if (!customer) {
+            return {
+              success: false,
+              message:
+                "Unable to verify your Google session.",
+            };
+          }
+
+          return {
+            success: true,
+            user: customer,
+          };
+        } catch (error) {
+          return {
+            success: false,
+
+            message:
+              getErrorMessage(
+                error,
+                "Unable to sign in with Google. Please try again."
+              ),
+          };
+        } finally {
+          setIsAuthLoading(
+            false
+          );
+        }
+      },
+      [
+        isAuthLoading,
+        refreshUser,
+      ]
+    );
+
   const signOut =
     useCallback(
       async (): Promise<void> => {
@@ -386,12 +487,24 @@ export function AuthProvider({
           return;
         }
 
-        setIsAuthLoading(true);
+        setIsAuthLoading(
+          true
+        );
 
         try {
           await api.post(
             "/api/auth/logout"
           );
+
+          if (
+            typeof window !==
+              "undefined" &&
+            window.google
+              ?.accounts?.id
+              ?.disableAutoSelect
+          ) {
+            window.google.accounts.id.disableAutoSelect();
+          }
         } catch (error) {
           console.error(
             "Logout error:",
@@ -399,77 +512,94 @@ export function AuthProvider({
           );
         } finally {
           setUser(null);
-          setIsAuthLoading(false);
+
+          setIsAuthLoading(
+            false
+          );
         }
       },
       [isAuthLoading]
     );
 
-  // Temporary local orders
-  const addOrder = useCallback(
-    (
-      order: Omit<
-        CustomerOrder,
-        "id" | "date" | "status"
-      >
-    ): CustomerOrder => {
-      const completedOrder: CustomerOrder =
-        {
-          ...order,
+  const addOrder =
+    useCallback(
+      (
+        order: Omit<
+          CustomerOrder,
+          | "id"
+          | "date"
+          | "status"
+        >
+      ): CustomerOrder => {
+        const completedOrder: CustomerOrder =
+          {
+            ...order,
 
-          id: `VC-${Date.now()
-            .toString()
-            .slice(-6)}`,
+            id: `VC-${Date.now()
+              .toString()
+              .slice(-6)}`,
 
-          date:
-            new Date().toISOString(),
+            date:
+              new Date().toISOString(),
 
-          status: "Confirmed",
-        };
+            status:
+              "Confirmed",
+          };
 
-      setOrders((current) => [
-        completedOrder,
-        ...current,
-      ]);
+        setOrders(
+          (current) => [
+            completedOrder,
+            ...current,
+          ]
+        );
 
-      return completedOrder;
-    },
-    []
-  );
+        return completedOrder;
+      },
+      []
+    );
 
-  const cancelOrder = useCallback(
-    (orderId: string): boolean => {
-      const order = orders.find(
-        (item) =>
-          item.id === orderId
-      );
+  const cancelOrder =
+    useCallback(
+      (
+        orderId: string
+      ): boolean => {
+        const order =
+          orders.find(
+            (item) =>
+              item.id ===
+              orderId
+          );
 
-      if (!order) {
-        return false;
-      }
+        if (!order) {
+          return false;
+        }
 
-      if (
-        order.status !== "Confirmed"
-      ) {
-        return false;
-      }
+        if (
+          order.status !==
+          "Confirmed"
+        ) {
+          return false;
+        }
 
-      setOrders((current) =>
-        current.map((item) =>
-          item.id === orderId
-            ? {
-                ...item,
-                status:
-                  "Cancelled",
-              }
-            : item
-        )
-      );
+        setOrders(
+          (current) =>
+            current.map(
+              (item) =>
+                item.id ===
+                orderId
+                  ? {
+                      ...item,
+                      status:
+                        "Cancelled",
+                    }
+                  : item
+            )
+        );
 
-      return true;
-    },
-    [orders]
-  );
+        return true;
+      },
+      [orders]
+    );
 
   const value =
     useMemo<AuthContextType>(
@@ -481,6 +611,7 @@ export function AuthProvider({
 
         login,
         register,
+        googleLogin,
         signOut,
         refreshUser,
 
@@ -494,6 +625,7 @@ export function AuthProvider({
         isAuthLoading,
         login,
         register,
+        googleLogin,
         signOut,
         refreshUser,
         addOrder,
