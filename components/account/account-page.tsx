@@ -1,17 +1,38 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowRight,
   Clock3,
   LogOut,
   PackageCheck,
   ShoppingBag,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 import AuthPanel from "@/components/order/auth-panel";
 import { useAuth } from "@/components/store/auth-context";
 import { useCart } from "@/components/store/cart-context";
 import Button from "@/components/ui/button";
+
+type OrderItem = {
+  id?: string;
+  name?: string;
+  title?: string;
+  productName?: string;
+  quantity?: number;
+  qty?: number;
+};
+
+type AccountOrder = {
+  id: string;
+  status: string;
+  date: string;
+  itemCount: number;
+  total: number;
+  items?: readonly OrderItem[];
+};
 
 export default function AccountPage({
   next,
@@ -49,7 +70,7 @@ export default function AccountPage({
     );
   }
 
-  const recent = orders[0];
+  const recent = orders[0] as AccountOrder | undefined;
 
   const totalSpent = orders.reduce(
     (total, order) => total + order.total,
@@ -77,8 +98,21 @@ export default function AccountPage({
   return (
     <section className="min-h-screen bg-[var(--brand-background)] px-4 pb-32 pt-9 sm:px-8 lg:px-12 lg:pb-20 lg:pt-12">
       <div className="mx-auto max-w-[1120px]">
-        {/* Heading */}
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 20,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            duration: 0.55,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"
+        >
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--brand-primary)]">
               My account
@@ -88,8 +122,9 @@ export default function AccountPage({
               Welcome, {user.name}.
             </h1>
 
-            <p className="mt-2 text-sm text-[var(--brand-muted)]">
-              Manage your orders and continue where you left off.
+            <p className="mt-2 max-w-[500px] text-sm leading-6 text-[var(--brand-muted)]">
+              Manage your orders and continue where you
+              left off.
             </p>
           </div>
 
@@ -103,39 +138,90 @@ export default function AccountPage({
           >
             Sign out
           </Button>
-        </div>
+        </motion.div>
 
-        {/* Metrics */}
-        <div className="mt-10 grid grid-cols-2 gap-x-5 gap-y-8 border-y border-[var(--brand-border)] py-7 sm:grid-cols-3 sm:gap-x-8">
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 25,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: false,
+            amount: 0.25,
+          }}
+          transition={{
+            duration: 0.55,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          className="mt-10 grid grid-cols-2 gap-x-5 gap-y-8 border-y border-[var(--brand-border)] py-7 sm:grid-cols-3 sm:gap-x-8"
+        >
           {metrics.map(
-            ({ label, value, icon: Icon }) => (
+            ({
+              label,
+              value,
+              icon: Icon,
+            }) => (
               <Metric
                 key={label}
-                icon={<Icon size={20} />}
+                icon={
+                  <Icon
+                    size={20}
+                    strokeWidth={1.7}
+                  />
+                }
                 label={label}
                 value={value}
               />
             )
           )}
-        </div>
+        </motion.div>
 
-        {/* Order history */}
-        <section className="mt-10">
-          <div className="flex items-start justify-between gap-4 sm:items-center">
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 30,
+          }}
+          whileInView={{
+            opacity: 1,
+            y: 0,
+          }}
+          viewport={{
+            once: false,
+            amount: 0.2,
+          }}
+          transition={{
+            duration: 0.6,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          className="mt-10"
+        >
+          <div className="flex items-end justify-between gap-4">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--brand-primary)] sm:text-[11px]">
                 Order history
               </p>
 
-              <h2 className="mt-1 font-serif text-2xl text-[var(--brand-text-dark)]">
-                Recent orders
+              <h2 className="mt-1 font-serif text-2xl text-[var(--brand-text-dark)] sm:text-3xl">
+                Recent order
               </h2>
             </div>
 
             {orders.length > 0 && (
-              <span className="shrink-0 text-xs font-semibold text-[var(--brand-primary)] sm:text-sm">
-                AED {totalSpent.toFixed(2)} total
-              </span>
+              <Link
+                href="/account/orders"
+                className="group inline-flex shrink-0 items-center gap-1.5 pb-1 text-xs font-semibold text-[var(--brand-primary)] transition-opacity duration-300 hover:opacity-70 sm:text-sm"
+              >
+                View all
+
+                <ArrowRight
+                  size={14}
+                  className="transition-transform duration-300 group-hover:translate-x-1"
+                />
+              </Link>
             )}
           </div>
 
@@ -144,7 +230,22 @@ export default function AccountPage({
           ) : (
             <EmptyOrders />
           )}
-        </section>
+
+          {orders.length > 0 && (
+            <div className="mt-5 flex items-center justify-between">
+              <p className="text-xs text-[var(--brand-muted)]">
+                {orders.length}{" "}
+                {orders.length === 1
+                  ? "order"
+                  : "orders"}
+              </p>
+
+              <p className="text-xs font-semibold text-[var(--brand-primary)] sm:text-sm">
+                AED {totalSpent.toFixed(2)} total
+              </p>
+            </div>
+          )}
+        </motion.section>
       </div>
     </section>
   );
@@ -160,7 +261,15 @@ function Metric({
   value: string;
 }) {
   return (
-    <div className="min-w-0">
+    <motion.div
+      whileHover={{
+        y: -3,
+      }}
+      transition={{
+        duration: 0.25,
+      }}
+      className="min-w-0"
+    >
       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]">
         {icon}
       </div>
@@ -172,74 +281,224 @@ function Metric({
       <p className="mt-1 truncate font-serif text-xl text-[var(--brand-text-dark)] sm:text-2xl">
         {value}
       </p>
-    </div>
+    </motion.div>
   );
 }
 
 function RecentOrder({
   order,
 }: {
-  order: {
-    id: string;
-    status: string;
-    date: string;
-    itemCount: number;
-    total: number;
-  };
+  order: AccountOrder;
 }) {
-  const date = new Intl.DateTimeFormat("en-AE", {
-    dateStyle: "medium",
-  }).format(new Date(order.date));
+  const date = new Intl.DateTimeFormat(
+    "en-AE",
+    {
+      dateStyle: "medium",
+    }
+  ).format(new Date(order.date));
+
+  const cancelled =
+    order.status.toLowerCase() === "cancelled";
+
+  const items = order.items ?? [];
 
   return (
-    <div className="mt-6 flex flex-col gap-4 border-y border-[var(--brand-border)] py-5 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-[var(--brand-text-dark)]">
-            {order.id}
-          </span>
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: 20,
+        scale: 0.98,
+      }}
+      whileInView={{
+        opacity: 1,
+        y: 0,
+        scale: 1,
+      }}
+      viewport={{
+        once: false,
+        amount: 0.3,
+      }}
+      transition={{
+        duration: 0.5,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className="mt-6 rounded-[24px] border border-[var(--brand-border)] bg-white p-5 shadow-[0_12px_35px_rgba(81,0,0,0.035)] sm:p-6"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--brand-muted)]">
+            Order
+          </p>
 
-          <span className="rounded-full bg-[var(--brand-primary-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--brand-primary)]">
-            {order.status}
-          </span>
+          <p className="mt-1 truncate font-serif text-xl text-[var(--brand-text-dark)] sm:text-2xl">
+            {order.id}
+          </p>
         </div>
 
-        <p className="mt-2 text-sm text-[var(--brand-muted)]">
-          {date} · {order.itemCount}{" "}
-          {order.itemCount === 1 ? "item" : "items"}
-        </p>
+        <span
+          className={`
+            shrink-0
+            rounded-full
+            px-3
+            py-1.5
+            text-[9px]
+            font-semibold
+            uppercase
+            tracking-[0.08em]
+            ${
+              cancelled
+                ? "bg-red-50 text-red-700"
+                : "bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]"
+            }
+          `}
+        >
+          {order.status}
+        </span>
       </div>
 
-      <p className="text-lg font-bold tabular-nums text-[var(--brand-primary)]">
-        AED {order.total.toFixed(2)}
-      </p>
-    </div>
+      <div className="mt-5 grid grid-cols-2 gap-5 border-t border-[var(--brand-border)] pt-5 sm:flex sm:gap-12">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+            Date
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-[var(--brand-text-dark)]">
+            {date}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+            Items
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-[var(--brand-text-dark)]">
+            {order.itemCount}{" "}
+            {order.itemCount === 1
+              ? "item"
+              : "items"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 border-t border-[var(--brand-border)] pt-5">
+        <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+          Ordered items
+        </p>
+
+        {items.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {items.map((item, index) => {
+              const name =
+                item.name ??
+                item.title ??
+                item.productName ??
+                "Cheesecake";
+
+              const quantity =
+                item.quantity ??
+                item.qty ??
+                1;
+
+              return (
+                <span
+                  key={
+                    item.id ??
+                    `${name}-${index}`
+                  }
+                  className="inline-flex items-center rounded-full bg-[var(--brand-primary-soft)] px-3 py-2 text-xs font-medium text-[var(--brand-primary)]"
+                >
+                  {name}
+
+                  {quantity > 1 && (
+                    <span className="ml-1.5 opacity-70">
+                      × {quantity}
+                    </span>
+                  )}
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-[var(--brand-muted)]">
+            Order item details unavailable.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-5 flex items-end justify-between gap-4 border-t border-[var(--brand-border)] pt-5">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+            Order total
+          </p>
+
+          <p className="mt-1 font-serif text-xl text-[var(--brand-primary)] sm:text-2xl">
+            AED {order.total.toFixed(2)}
+          </p>
+        </div>
+
+        <Link
+          href={`/account/orders/${encodeURIComponent(
+            order.id
+          )}`}
+          className="group inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[var(--brand-primary)] px-5 text-[11px] font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:opacity-90 sm:px-6"
+        >
+          View Order
+
+          <ArrowRight
+            size={15}
+            className="transition-transform duration-300 group-hover:translate-x-1"
+          />
+        </Link>
+      </div>
+    </motion.div>
   );
 }
 
 function EmptyOrders() {
   return (
-    <div className="mt-6 border-y border-[var(--brand-border)] py-10 text-center">
-      <ShoppingBag
-        size={28}
-        className="mx-auto text-[var(--brand-primary)]"
-      />
+    <motion.div
+      initial={{
+        opacity: 0,
+        scale: 0.96,
+      }}
+      whileInView={{
+        opacity: 1,
+        scale: 1,
+      }}
+      viewport={{
+        once: false,
+        amount: 0.3,
+      }}
+      transition={{
+        duration: 0.5,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className="mt-6 rounded-[24px] border border-[var(--brand-border)] bg-white px-5 py-12 text-center shadow-[0_12px_35px_rgba(81,0,0,0.03)]"
+    >
+      <div className="mx-auto grid size-12 place-items-center rounded-full bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]">
+        <ShoppingBag
+          size={21}
+          strokeWidth={1.7}
+        />
+      </div>
 
-      <p className="mt-3 font-serif text-xl text-[var(--brand-text-dark)]">
+      <p className="mt-4 font-serif text-2xl text-[var(--brand-text-dark)]">
         No orders yet
       </p>
 
-      <p className="mt-1 text-sm text-[var(--brand-muted)]">
-        Your latest order will appear here.
+      <p className="mx-auto mt-2 max-w-[280px] text-sm leading-6 text-[var(--brand-muted)]">
+        Your Velvet Crust orders will appear
+        here once you place your first order.
       </p>
 
       <Button
         href="/#cheesecakes"
         size="sm"
-        className="mt-5"
+        className="mt-6"
       >
         Shop cheesecakes
       </Button>
-    </div>
+    </motion.div>
   );
 }
