@@ -10,7 +10,7 @@ import { createSession } from "@/lib/auth/session";
 import Customer from "@/models/Customer";
 
 const GOOGLE_CLIENT_ID =
-  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  process.env.GOOGLE_CLIENT_ID;
 
 if (!GOOGLE_CLIENT_ID) {
   throw new Error(
