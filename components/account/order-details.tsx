@@ -130,7 +130,7 @@ export default function OrderDetails({
 
   function handleCancelOrder() {
     const success = cancelOrder(
-      order.id
+      orderId
     );
 
     if (!success) {

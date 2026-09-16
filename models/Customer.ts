@@ -171,18 +171,22 @@ CustomerSchema.set(
   "toJSON",
   {
     transform: (_doc, ret) => {
-      delete ret.passwordHash;
-      delete ret.googleId;
-      delete ret.appleId;
+      const publicCustomer = {
+        ...ret,
+      } as Record<string, unknown>;
 
-      delete ret.passwordResetOtpHash;
-      delete ret.passwordResetOtpExpires;
-      delete ret.passwordResetOtpAttempts;
-      delete ret.passwordResetVerifiedAt;
-      delete ret.passwordResetTokenHash;
-      delete ret.passwordResetTokenExpires;
+      delete publicCustomer.passwordHash;
+      delete publicCustomer.googleId;
+      delete publicCustomer.appleId;
 
-      return ret;
+      delete publicCustomer.passwordResetOtpHash;
+      delete publicCustomer.passwordResetOtpExpires;
+      delete publicCustomer.passwordResetOtpAttempts;
+      delete publicCustomer.passwordResetVerifiedAt;
+      delete publicCustomer.passwordResetTokenHash;
+      delete publicCustomer.passwordResetTokenExpires;
+
+      return publicCustomer;
     },
   }
 );
