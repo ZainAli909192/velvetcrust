@@ -1,5 +1,5 @@
 export type CartProduct = {
-  id: string | number;
+  id: string;
   name: string;
   slug: string;
   description: string;
@@ -7,6 +7,7 @@ export type CartProduct = {
   image: string;
 };
 
-export type CartItem = CartProduct & {
-  quantity: number;
-};
+export type CartItem =
+  CartProduct & {
+    quantity: number;
+  };

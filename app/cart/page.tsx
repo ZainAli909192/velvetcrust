@@ -9,6 +9,7 @@ export default function CartRoute() {
   return (
     <>
       <Header />
+
       <main className="pt-20 lg:pt-[92px]">
         <CartPage />
       </main>

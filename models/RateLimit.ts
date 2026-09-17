@@ -7,7 +7,9 @@ import mongoose, {
 export type RateLimitType =
   | "forgot-password-ip"
   | "forgot-password-email"
-  | "verify-otp-ip";
+  | "verify-otp-ip"
+  | "order-create-ip"
+  | "order-create-customer";
 
 export interface IRateLimit
   extends Document {
@@ -36,6 +38,8 @@ const RateLimitSchema =
           "forgot-password-ip",
           "forgot-password-email",
           "verify-otp-ip",
+          "order-create-ip",
+          "order-create-customer",
         ],
       },
 

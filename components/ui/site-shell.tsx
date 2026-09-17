@@ -1,22 +1,36 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import {
+  usePathname,
+} from "next/navigation";
 
 import SiteLoader from "@/components/ui/site-loader";
 import MobileBottomNav from "@/components/home/mobile-bottom-nav";
 
-import { CartProvider } from "@/components/store/cart-context";
-import { AuthProvider } from "@/components/store/auth-context";
-import { ToastProvider } from "@/components/providers/toast-provider";
+import {
+  CartProvider,
+} from "@/components/store/cart-context";
+import {
+  AuthProvider,
+} from "@/components/store/auth-context";
+import {
+  CheckoutProvider,
+} from "@/components/store/checkout-context";
+import {
+  ToastProvider,
+} from "@/components/providers/toast-provider";
 
-import { ConnectMenu } from "./connect-menu";
+import {
+  ConnectMenu,
+} from "./connect-menu";
 
 export default function SiteShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname =
+    usePathname();
 
   const hideConnectMenu =
     pathname === "/account" ||
@@ -27,17 +41,19 @@ export default function SiteShell({
   return (
     <AuthProvider>
       <CartProvider>
-        <ToastProvider>
-          <SiteLoader />
+        <CheckoutProvider>
+          <ToastProvider>
+            <SiteLoader />
 
-          {!hideConnectMenu && (
-            <ConnectMenu />
-          )}
+            {!hideConnectMenu && (
+              <ConnectMenu />
+            )}
 
-          {children}
+            {children}
 
-          <MobileBottomNav />
-        </ToastProvider>
+            <MobileBottomNav />
+          </ToastProvider>
+        </CheckoutProvider>
       </CartProvider>
     </AuthProvider>
   );

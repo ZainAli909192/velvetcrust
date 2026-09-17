@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {
+  useRouter,
+} from "next/navigation";
+import axios from "axios";
 
 import {
   ArrowLeft,
@@ -17,36 +23,153 @@ import {
 import Button from "@/components/ui/button";
 import GuestCheckoutModal from "@/components/checkout/guest-checkout-modal";
 
-import { useCart } from "@/components/store/cart-context";
-import { useAuth } from "@/components/store/auth-context";
+import {
+  useCart,
+} from "@/components/store/cart-context";
+import {
+  useAuth,
+} from "@/components/store/auth-context";
+
+import type {
+  CartProduct,
+} from "@/types/cart";
+
+type ProductsResponse = {
+  success: boolean;
+  products: CartProduct[];
+};
 
 export default function CartPage() {
   const router = useRouter();
 
-  const { user } = useAuth();
+  const {
+    user,
+  } = useAuth();
 
   const {
     items,
     subtotal,
+    isCartReady,
     increaseQuantity,
     decreaseQuantity,
     removeItem,
     clearCart,
+    syncCart,
   } = useCart();
 
-  const [guestModalOpen, setGuestModalOpen] =
-    useState(false);
+  const [
+    guestModalOpen,
+    setGuestModalOpen,
+  ] = useState(false);
 
-  function handleCheckout() {
-    if (user) {
-      router.push("/checkout");
+  useEffect(() => {
+    if (!isCartReady) {
       return;
     }
 
-    setGuestModalOpen(true);
+    let active = true;
+
+    async function synchronizeCart() {
+      try {
+        const response =
+          await axios.get<ProductsResponse>(
+            "/api/products"
+          );
+
+        if (
+          !active ||
+          !response.data.success ||
+          !Array.isArray(
+            response.data.products
+          )
+        ) {
+          return;
+        }
+
+        syncCart(
+          response.data.products
+        );
+      } catch (error) {
+        console.error(
+          "Unable to synchronize cart:",
+          error
+        );
+      }
+    }
+
+    void synchronizeCart();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    isCartReady,
+    syncCart,
+  ]);
+
+async function handleCheckout() {
+  try {
+    const response =
+      await axios.get<ProductsResponse>(
+        "/api/products",
+        {
+          params: {
+            t: Date.now(),
+          },
+        }
+      );
+
+    if (
+      response.data.success &&
+      Array.isArray(
+        response.data.products
+      )
+    ) {
+      syncCart(
+        response.data.products
+      );
+    }
+  } catch (error) {
+    console.error(
+      "Unable to verify cart:",
+      error
+    );
+
+    return;
   }
 
-  if (items.length === 0) {
+  if (user) {
+    router.push(
+      "/checkout"
+    );
+
+    return;
+  }
+
+  setGuestModalOpen(true);
+}
+
+  if (!isCartReady) {
+    return (
+      <section className="min-h-[70vh] bg-[var(--brand-background)] px-5 py-16">
+        <div className="mx-auto max-w-[1300px]">
+          <div className="h-5 w-32 animate-pulse rounded-full bg-[var(--brand-primary-soft)]" />
+
+          <div className="mt-8 h-12 w-52 animate-pulse rounded-xl bg-[var(--brand-primary-soft)]" />
+
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_390px]">
+            <div className="h-[190px] animate-pulse rounded-[24px] bg-white" />
+
+            <div className="h-[300px] animate-pulse rounded-[28px] bg-white" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (
+    items.length === 0
+  ) {
     return (
       <section className="min-h-[70vh] bg-[var(--brand-background)] px-5 py-16">
         <div className="mx-auto flex max-w-xl flex-col items-center justify-center text-center">
@@ -69,7 +192,11 @@ export default function CartPage() {
             href="/#cheesecakes"
             variant="primary"
             size="lg"
-            iconRight={<ArrowRight size={16} />}
+            iconRight={
+              <ArrowRight
+                size={16}
+              />
+            }
             className="mt-7"
           >
             View Cheesecakes
@@ -87,7 +214,9 @@ export default function CartPage() {
             href="/#cheesecakes"
             className="inline-flex items-center gap-2 text-sm text-[var(--brand-muted)] transition hover:text-[var(--brand-primary)]"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft
+              size={16}
+            />
 
             Continue Shopping
           </Link>
@@ -104,103 +233,141 @@ export default function CartPage() {
 
           <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_390px]">
             <div className="space-y-4">
-              {items.map((item) => (
-                <article
-                  key={item.id}
-                  className="
-                    grid
-                    grid-cols-[100px_1fr]
-                    gap-4
-                    rounded-[24px]
-                    border
-                    border-[var(--brand-border)]
-                    bg-white
-                    p-4
-
-                    sm:grid-cols-[150px_1fr]
-                    sm:p-5
-                  "
-                >
-                  <div className="relative aspect-square overflow-hidden rounded-[18px] bg-[var(--brand-primary-soft)]">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      className="object-contain p-2"
-                      sizes="150px"
-                    />
-                  </div>
-
-                  <div className="flex flex-col justify-between">
-                    <div>
-                      <h2 className="font-serif text-lg text-[var(--brand-text-dark)] sm:text-2xl">
-                        {item.name}
-                      </h2>
-
-                      <p className="mt-1 hidden text-sm text-[var(--brand-muted)] sm:block">
-                        {item.description}
-                      </p>
-
-                      <p className="mt-2 font-semibold text-[var(--brand-primary)]">
-                        AED {item.price.toFixed(2)}
-                      </p>
+              {items.map(
+                (item) => (
+                  <article
+                    key={
+                      item.id
+                    }
+                    className="
+                      grid
+                      grid-cols-[100px_1fr]
+                      gap-4
+                      rounded-[24px]
+                      border
+                      border-[var(--brand-border)]
+                      bg-white
+                      p-4
+                      sm:grid-cols-[150px_1fr]
+                      sm:p-5
+                    "
+                  >
+                    <div className="relative aspect-square overflow-hidden rounded-[18px] bg-[var(--brand-primary-soft)]">
+                      <Image
+                        src={
+                          item.image
+                        }
+                        alt={
+                          item.name
+                        }
+                        fill
+                        className="object-contain p-2"
+                        sizes="150px"
+                      />
                     </div>
 
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center rounded-full border border-[var(--brand-border)]">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            decreaseQuantity(item.id)
+                    <div className="flex flex-col justify-between">
+                      <div>
+                        <h2 className="font-serif text-lg text-[var(--brand-text-dark)] sm:text-2xl">
+                          {
+                            item.name
                           }
-                          className="h-9 w-9"
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus size={14} />
-                        </Button>
+                        </h2>
 
-                        <span className="min-w-8 text-center text-sm font-semibold">
-                          {item.quantity}
-                        </span>
-
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            increaseQuantity(item.id)
+                        <p className="mt-1 hidden text-sm text-[var(--brand-muted)] sm:block">
+                          {
+                            item.description
                           }
-                          className="h-9 w-9"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus size={14} />
-                        </Button>
+                        </p>
+
+                        <p className="mt-2 font-semibold text-[var(--brand-primary)]">
+                          AED{" "}
+                          {item.price.toFixed(
+                            2
+                          )}
+                        </p>
                       </div>
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          removeItem(item.id)
-                        }
-                        iconLeft={<Trash2 size={14} />}
-                        className="px-3 text-[var(--brand-muted)]"
-                      >
-                        Remove
-                      </Button>
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center rounded-full border border-[var(--brand-border)]">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              decreaseQuantity(
+                                item.id
+                              )
+                            }
+                            className="h-9 w-9"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus
+                              size={
+                                14
+                              }
+                            />
+                          </Button>
+
+                          <span className="min-w-8 text-center text-sm font-semibold">
+                            {
+                              item.quantity
+                            }
+                          </span>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              increaseQuantity(
+                                item.id
+                              )
+                            }
+                            className="h-9 w-9"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus
+                              size={
+                                14
+                              }
+                            />
+                          </Button>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            removeItem(
+                              item.id
+                            )
+                          }
+                          iconLeft={
+                            <Trash2
+                              size={
+                                14
+                              }
+                            />
+                          }
+                          className="px-3 text-[var(--brand-muted)]"
+                        >
+                          Remove
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                )
+              )}
 
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={clearCart}
+                onClick={
+                  clearCart
+                }
                 className="text-[var(--brand-muted)] underline underline-offset-4"
               >
                 Clear Cart
@@ -220,7 +387,10 @@ export default function CartPage() {
                     </span>
 
                     <span className="font-semibold text-[var(--brand-text-dark)]">
-                      AED {subtotal.toFixed(2)}
+                      AED{" "}
+                      {subtotal.toFixed(
+                        2
+                      )}
                     </span>
                   </div>
 
@@ -241,7 +411,10 @@ export default function CartPage() {
                       </span>
 
                       <span className="text-xl font-bold text-[var(--brand-primary)]">
-                        AED {subtotal.toFixed(2)}
+                        AED{" "}
+                        {subtotal.toFixed(
+                          2
+                        )}
                       </span>
                     </div>
                   </div>
@@ -249,19 +422,25 @@ export default function CartPage() {
 
                 <Button
                   type="button"
-                  onClick={handleCheckout}
+                  onClick={
+                    handleCheckout
+                  }
                   variant="primary"
                   size="lg"
                   fullWidth
-                  iconRight={<ArrowRight size={16} />}
+                  iconRight={
+                    <ArrowRight
+                      size={16}
+                    />
+                  }
                   className="mt-7"
                 >
                   Continue to Checkout
                 </Button>
 
                 <p className="mt-4 text-center text-[10px] leading-5 text-[var(--brand-muted)]">
-                  Sign in or continue as guest to
-                  complete your order.
+                  Sign in or continue as guest to complete your
+                  order.
                 </p>
               </div>
             </aside>
@@ -270,8 +449,14 @@ export default function CartPage() {
       </section>
 
       <GuestCheckoutModal
-        open={guestModalOpen}
-        onClose={() => setGuestModalOpen(false)}
+        open={
+          guestModalOpen
+        }
+        onClose={() =>
+          setGuestModalOpen(
+            false
+          )
+        }
       />
     </>
   );
