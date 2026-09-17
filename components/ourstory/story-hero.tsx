@@ -53,8 +53,8 @@ export default function StoryHero() {
           </motion.div>
 
           <motion.h1
-            variants={fadeUp}
-            className="font-serif text-[48px] font-medium leading-[0.95] tracking-[-0.04em] text-[#55191D] sm:text-6xl lg:text-[88px]"
+            variants={fadeUp} 
+            className=" font-serif text-[48px] font-medium leading-[0.95] tracking-[-0.04em] text-[#55191D] sm:text-6xl lg:text-[88px]"
           >
             Made With Love.
             <br />

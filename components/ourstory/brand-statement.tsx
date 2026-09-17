@@ -28,7 +28,7 @@ export default function BrandStatement() {
       <div className="absolute inset-0 bg-[#31090a]/40" />
       <div className="absolute inset-0 bg-gradient-to-t from-[#31090a]/5 via-transparent to-black/0" />
 
-      <div className="relative z-10 mx-auto flex min-h-[70svh] max-w-[1400px] items-end px-5 pb-14 sm:min-h-[75vh] sm:px-8 sm:pb-16 lg:min-h-[85vh] lg:items-center lg:px-16 xl:px-24">
+      <div className="relative  z-10 mx-auto flex min-h-[70svh] max-w-[1400px] items-end px-5 pb-14 sm:min-h-[75vh] sm:px-8 sm:pb-16 lg:min-h-[85vh] lg:items-center lg:px-16 xl:px-24">
         <motion.div
           initial={{
             opacity: 0,
@@ -47,7 +47,7 @@ export default function BrandStatement() {
         >
       
 
-        <h2 className="mt-5 font-serif text-[48px] leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:text-[88px]">
+        <h2 className=" font-serif absolute top-[20%] text-[35px] leading-[0.95] tracking-[-0.04em] text-white sm:text-6xl lg:text-[88px]">
   Made with love.
   <span className="block text-[#f0d3c3]">
     Shared with joy.
