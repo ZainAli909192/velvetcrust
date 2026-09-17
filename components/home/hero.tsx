@@ -50,7 +50,7 @@ export default function Hero() {
           absolute
           inset-0
           z-[1]
-          bg-[#510000]/16
+          bg-[#510000]/5
           lg:hidden
         "
       />
@@ -208,60 +208,77 @@ export default function Hero() {
 
          
            {/* Description */}
-          <motion.p
-            variants={fadeUp}
-            className="
-              mt-6
-              max-w-[355px]
-              text-[14px]
-              font-normal
-              leading-7
-              text-white/95
+      {/* Description */}
+<motion.p
+  variants={fadeUp}
+  className="
+    relative
+    -top-10
+    mt-6
+    max-w-[355px]
 
-              min-[390px]:text-[15px]
-            "
-          >
-            Crafted with premium ingredients,
-            baked with love, and made for
-            life&apos;s sweet moments.
-          </motion.p>
+    text-[14px]
+    font-normal
+    leading-7
+    text-white/95
+
+    min-[390px]:text-[15px]
+  "
+>
+  Crafted with premium ingredients,
+  baked with love, and made for
+  life&apos;s sweet moments.
+</motion.p>
 
           {/* CTA */}
-          <motion.div variants={fadeUp}>
-            <Link
-              href="/#cheesecakes"
-              className="
-                mt-6
-                inline-flex
-                items-center
-                gap-5
-                rounded-full
-                border
-                border-white/70
-                bg-white/95
-                px-5
-                py-4
+      {/* Mobile CTA */}
+<motion.div
+  variants={fadeUp}
+  className="
+    fixed
+    bottom-[calc(7.5rem+env(safe-area-inset-bottom))]
+    left-7
+    z-[74]
 
-                text-[10px]
-                font-semibold
-                uppercase
-                tracking-[0.17em]
-                text-[#510000]
+    sm:left-10
+  "
+>
+  <Link
+    href="/#cheesecakes"
+    className="
+      inline-flex
+      min-h-12
+      items-center
+      gap-5
+      rounded-full
+      border
+      border-white/70
+      bg-white/95
+      px-5
 
-                shadow-[0_12px_35px_rgba(0,0,0,0.14)]
-                backdrop-blur-sm
+      text-[10px]
+      font-semibold
+      uppercase
+      tracking-[0.17em]
+      text-[#510000]
 
-                transition
-                duration-300
-                hover:bg-[#FFF7EA]
-                active:scale-[0.97]
-              "
-            >
-              Order Now
+      shadow-[0_12px_35px_rgba(0,0,0,0.14)]
+      backdrop-blur-sm
 
-              <ArrowRight size={16} />
-            </Link>
-          </motion.div>
+      transition
+      duration-300
+
+      hover:bg-[#FFF7EA]
+      active:scale-[0.97]
+    "
+  >
+    Order Now
+
+    <ArrowRight
+      size={16}
+    />
+  </Link>
+</motion.div>
 
         </div>
       </motion.div>
@@ -322,7 +339,7 @@ export default function Hero() {
           <motion.p
             variants={fadeUp}
             className="
-              mt-6
+              mt-10
               max-w-[510px]
               font-serif
               text-xl
