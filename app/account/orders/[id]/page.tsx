@@ -9,15 +9,24 @@ export default async function OrderDetailsPage({
     id: string;
   }>;
 }) {
-  const { id } = await params;
+  const {
+    id,
+  } = await params;
+
+  const orderNumber =
+    decodeURIComponent(id);
 
   return (
     <>
-    <Header />
-    <OrderDetails
-      orderId={decodeURIComponent(id)}
+      <Header />
+
+      <OrderDetails
+        orderNumber={
+          orderNumber
+        }
       />
-    <Footer />
-      </>
+
+      <Footer />
+    </>
   );
 }

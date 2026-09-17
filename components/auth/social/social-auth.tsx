@@ -15,12 +15,16 @@ export default function SocialAuth({
       className="
         grid
         grid-cols-2
+        items-start
         gap-2.5
+
         sm:gap-3
       "
     >
       <GoogleLogin
-        onSuccess={onSuccess}
+        onSuccess={
+          onSuccess
+        }
       />
 
       <AppleLogin />

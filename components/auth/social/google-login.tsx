@@ -46,7 +46,9 @@ export default function GoogleLogin({
       async (
         response: GoogleCredentialResponse
       ) => {
-        if (!response.credential) {
+        if (
+          !response.credential
+        ) {
           setError(
             "Google sign in could not be completed."
           );
@@ -61,7 +63,9 @@ export default function GoogleLogin({
             response.credential
           );
 
-        if (!result.success) {
+        if (
+          !result.success
+        ) {
           setError(
             result.message ||
               "Unable to sign in with Google."
@@ -84,20 +88,29 @@ export default function GoogleLogin({
         process.env
           .NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-      if (
-        !clientId ||
-        !window.google?.accounts?.id
-      ) {
-        setError(
-          "Google sign in is currently unavailable."
+      if (!clientId) {
+        console.error(
+          "GOOGLE_CLIENT_ID is not configured."
+        );
+
+        setIsGoogleReady(
+          false
         );
 
         return;
       }
 
+      if (
+        !window.google
+          ?.accounts?.id
+      ) {
+        return;
+      }
+
       window.google.accounts.id.initialize(
         {
-          client_id: clientId,
+          client_id:
+            clientId,
 
           callback: (
             response
@@ -107,22 +120,29 @@ export default function GoogleLogin({
             );
           },
 
-          auto_select: false,
+          auto_select:
+            false,
 
           cancel_on_tap_outside:
             true,
         }
       );
 
-      setIsGoogleReady(true);
+      setIsGoogleReady(
+        true
+      );
+
       setError("");
-    }, [handleCredential]);
+    }, [
+      handleCredential,
+    ]);
 
   useEffect(() => {
     if (
       !isGoogleReady ||
       !googleButtonRef.current ||
-      !window.google?.accounts?.id
+      !window.google
+        ?.accounts?.id
     ) {
       return;
     }
@@ -133,26 +153,41 @@ export default function GoogleLogin({
     window.google.accounts.id.renderButton(
       googleButtonRef.current,
       {
-        type: "standard",
-        theme: "outline",
-        size: "large",
-        text: "continue_with",
-        shape: "pill",
-        width: 240,
+        type:
+          "standard",
+
+        theme:
+          "outline",
+
+        size:
+          "large",
+
+        text:
+          "continue_with",
+
+        shape:
+          "pill",
+
+        width:
+          240,
       }
     );
-  }, [isGoogleReady]);
+  }, [
+    isGoogleReady,
+  ]);
 
   return (
     <div className="min-w-0">
       <Script
         src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
-        onLoad={
-          initializeGoogle
-        }
+        onLoad={() => {
+          initializeGoogle();
+        }}
         onError={() => {
-          setIsGoogleReady(false);
+          setIsGoogleReady(
+            false
+          );
 
           setError(
             "Google sign in could not be loaded."
@@ -163,11 +198,10 @@ export default function GoogleLogin({
       <div
         className="
           relative
-          min-h-[46px]
+          h-[46px]
           w-full
           overflow-hidden
           rounded-full
- 
         "
       >
         <button
@@ -178,7 +212,7 @@ export default function GoogleLogin({
           }
           className="
             flex
-            min-h-[46px]
+            h-[46px]
             w-full
             items-center
             justify-center
@@ -192,11 +226,14 @@ export default function GoogleLogin({
             font-medium
             text-[#1F1F1F]
             transition
+
+            hover:bg-[#FAFAFA]
+
             disabled:cursor-not-allowed
             disabled:opacity-70
 
             sm:text-sm
-          " 
+          "
         >
           <Image
             src="/images/payments/google.png"
@@ -217,7 +254,9 @@ export default function GoogleLogin({
 
         {isGoogleReady && (
           <div
-            ref={googleButtonRef}
+            ref={
+              googleButtonRef
+            }
             className="
               absolute
               inset-0

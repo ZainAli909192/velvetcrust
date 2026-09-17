@@ -4,6 +4,7 @@ import {
   AnimatePresence,
   motion,
 } from "framer-motion";
+
 import {
   ArrowRight,
   Check,
@@ -11,7 +12,10 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+
+import {
+  useRouter,
+} from "next/navigation";
 
 type GuestCheckoutModalProps = {
   open: boolean;
@@ -28,16 +32,28 @@ export default function GuestCheckoutModal({
   open,
   onClose,
 }: GuestCheckoutModalProps) {
-  const router = useRouter();
+  const router =
+    useRouter();
 
   function handleSignIn() {
     onClose();
-    router.push("/account/login?redirect=/checkout");
+
+    const redirect =
+      encodeURIComponent(
+        "/checkout"
+      );
+
+    router.push(
+      `/account?redirect=${redirect}`
+    );
   }
 
   function handleGuestCheckout() {
     onClose();
-    router.push("/checkout?mode=guest");
+
+    router.push(
+      "/checkout?mode=guest"
+    );
   }
 
   return (
@@ -47,11 +63,21 @@ export default function GuestCheckoutModal({
           <motion.button
             type="button"
             aria-label="Close checkout options"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            onClick={onClose}
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            transition={{
+              duration: 0.25,
+            }}
+            onClick={
+              onClose
+            }
             className="
               fixed
               inset-0
@@ -97,7 +123,12 @@ export default function GuestCheckoutModal({
               }}
               transition={{
                 duration: 0.42,
-                ease: [0.22, 1, 0.36, 1],
+                ease: [
+                  0.22,
+                  1,
+                  0.36,
+                  1,
+                ],
               }}
               className="
                 pointer-events-auto
@@ -133,7 +164,9 @@ export default function GuestCheckoutModal({
 
               <button
                 type="button"
-                onClick={onClose}
+                onClick={
+                  onClose
+                }
                 aria-label="Close"
                 className="
                   absolute
@@ -153,7 +186,9 @@ export default function GuestCheckoutModal({
                   sm:grid
                 "
               >
-                <X size={18} />
+                <X
+                  size={18}
+                />
               </button>
 
               <motion.div
@@ -216,7 +251,9 @@ export default function GuestCheckoutModal({
               <div className="mt-7 space-y-3">
                 <motion.button
                   type="button"
-                  onClick={handleSignIn}
+                  onClick={
+                    handleSignIn
+                  }
                   initial={{
                     opacity: 0,
                     x: -25,
@@ -229,7 +266,9 @@ export default function GuestCheckoutModal({
                     delay: 0.18,
                     duration: 0.45,
                   }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={{
+                    scale: 0.98,
+                  }}
                   className="
                     group
                     flex
@@ -266,7 +305,9 @@ export default function GuestCheckoutModal({
                   >
                     <LogIn
                       size={20}
-                      strokeWidth={1.6}
+                      strokeWidth={
+                        1.6
+                      }
                     />
                   </span>
 
@@ -326,7 +367,9 @@ export default function GuestCheckoutModal({
 
                 <motion.button
                   type="button"
-                  onClick={handleGuestCheckout}
+                  onClick={
+                    handleGuestCheckout
+                  }
                   initial={{
                     opacity: 0,
                     x: 25,
@@ -339,7 +382,9 @@ export default function GuestCheckoutModal({
                     delay: 0.24,
                     duration: 0.45,
                   }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={{
+                    scale: 0.98,
+                  }}
                   className="
                     group
                     relative
@@ -374,7 +419,9 @@ export default function GuestCheckoutModal({
                   >
                     <UserRound
                       size={20}
-                      strokeWidth={1.6}
+                      strokeWidth={
+                        1.6
+                      }
                     />
                   </span>
 
@@ -449,36 +496,44 @@ export default function GuestCheckoutModal({
                   gap-y-2
                 "
               >
-                {benefits.map((item) => (
-                  <div
-                    key={item}
-                    className="
-                      flex
-                      items-center
-                      gap-1.5
-                      text-[10px]
-                      text-[#765E59]/65
-                    "
-                  >
-                    <span
+                {benefits.map(
+                  (item) => (
+                    <div
+                      key={
+                        item
+                      }
                       className="
-                        grid
-                        size-4
-                        place-items-center
-                        rounded-full
-                        bg-[#510000]/[0.06]
-                        text-[#721C20]
+                        flex
+                        items-center
+                        gap-1.5
+                        text-[10px]
+                        text-[#765E59]/65
                       "
                     >
-                      <Check
-                        size={9}
-                        strokeWidth={2}
-                      />
-                    </span>
+                      <span
+                        className="
+                          grid
+                          size-4
+                          place-items-center
+                          rounded-full
+                          bg-[#510000]/[0.06]
+                          text-[#721C20]
+                        "
+                      >
+                        <Check
+                          size={
+                            9
+                          }
+                          strokeWidth={
+                            2
+                          }
+                        />
+                      </span>
 
-                    {item}
-                  </div>
-                ))}
+                      {item}
+                    </div>
+                  )
+                )}
               </motion.div>
             </motion.div>
           </div>

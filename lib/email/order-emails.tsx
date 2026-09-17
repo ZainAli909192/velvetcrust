@@ -7,7 +7,7 @@ type OrderEmailItem = {
   totalPrice: number;
 };
 
-type OrderEmailData = {
+export type OrderEmailData = {
   orderNumber: string;
 
   customerDetails: {
@@ -32,12 +32,19 @@ type OrderEmailData = {
   total: number;
 
   paymentMethod: string;
+
+  paymentStatus?: string;
+
+  status?: string;
+
+  cancelledAt?:
+    Date | string | null;
 };
 
 function escapeHtml(
   value: string
 ) {
-  return value
+  return String(value)
     .replace(
       /&/g,
       "&amp;"
@@ -63,7 +70,14 @@ function escapeHtml(
 function money(
   value: number
 ) {
-  return `AED ${value.toFixed(
+  const safeValue =
+    Number.isFinite(
+      Number(value)
+    )
+      ? Number(value)
+      : 0;
+
+  return `AED ${safeValue.toFixed(
     2
   )}`;
 }
@@ -71,7 +85,9 @@ function money(
 function paymentLabel(
   method: string
 ) {
-  switch (method) {
+  switch (
+    method.toLowerCase()
+  ) {
     case "card":
       return "Credit / Debit Card";
 
@@ -144,6 +160,85 @@ function buildItemsHtml(
     .join("");
 }
 
+function buildDeliveryHtml(
+  order: OrderEmailData
+) {
+  const {
+    deliveryAddress,
+  } = order;
+
+  return `
+    ${escapeHtml(
+      deliveryAddress.addressLine
+    )}
+    <br/>
+
+    ${escapeHtml(
+      deliveryAddress.area
+    )},
+    ${escapeHtml(
+      deliveryAddress.emirate
+    )}
+
+    ${
+      deliveryAddress.building
+        ? `
+          <br/>
+          ${escapeHtml(
+            deliveryAddress.building
+          )}
+        `
+        : ""
+    }
+
+    ${
+      deliveryAddress.apartment
+        ? `
+          <br/>
+          Apartment / Unit:
+          ${escapeHtml(
+            deliveryAddress.apartment
+          )}
+        `
+        : ""
+    }
+  `;
+}
+
+function formatCancellationDate(
+  value?:
+    | Date
+    | string
+    | null
+) {
+  if (!value) {
+    return "Just now";
+  }
+
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "Just now";
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-AE",
+    {
+      dateStyle: "long",
+      timeStyle: "short",
+      timeZone:
+        "Asia/Dubai",
+    }
+  ).format(date);
+}
+
 function getResend() {
   const apiKey =
     process.env.RESEND_API_KEY;
@@ -172,6 +267,19 @@ function getFromEmail() {
   return from;
 }
 
+function getOwnerEmail() {
+  const ownerEmail =
+    process.env.OWNER_EMAIL;
+
+  if (!ownerEmail) {
+    throw new Error(
+      "OWNER_EMAIL is not configured."
+    );
+  }
+
+  return ownerEmail;
+}
+
 export async function sendCustomerOrderEmail(
   order: OrderEmailData
 ) {
@@ -185,6 +293,10 @@ export async function sendCustomerOrderEmail(
     buildItemsHtml(
       order.items
     );
+
+  const paymentStatus =
+    order.paymentStatus ??
+    "Pending";
 
   const html = `
     <!doctype html>
@@ -243,9 +355,7 @@ export async function sendCustomerOrderEmail(
               "
             >
               Hi ${escapeHtml(
-                order
-                  .customerDetails
-                  .fullName
+                order.customerDetails.fullName
               )},
               thank you for ordering
               from Velvet Crust.
@@ -404,21 +514,8 @@ export async function sendCustomerOrderEmail(
                   line-height:1.7;
                 "
               >
-                ${escapeHtml(
+                ${buildDeliveryHtml(
                   order
-                    .deliveryAddress
-                    .addressLine
-                )}<br/>
-
-                ${escapeHtml(
-                  order
-                    .deliveryAddress
-                    .area
-                )},
-                ${escapeHtml(
-                  order
-                    .deliveryAddress
-                    .emirate
                 )}
               </div>
             </div>
@@ -443,7 +540,9 @@ export async function sendCustomerOrderEmail(
 
               Payment status:
               <strong>
-                Pending
+                ${escapeHtml(
+                  paymentStatus
+                )}
               </strong>
             </p>
 
@@ -454,7 +553,7 @@ export async function sendCustomerOrderEmail(
                 line-height:1.7;
               "
             >
-              We&apos;ll keep you updated
+              We'll keep you updated
               as your order progresses.
             </p>
           </div>
@@ -480,13 +579,7 @@ export async function sendOwnerOrderEmail(
   order: OrderEmailData
 ) {
   const ownerEmail =
-    process.env.OWNER_EMAIL;
-
-  if (!ownerEmail) {
-    throw new Error(
-      "OWNER_EMAIL is not configured."
-    );
-  }
+    getOwnerEmail();
 
   const resend =
     getResend();
@@ -503,6 +596,14 @@ export async function sendOwnerOrderEmail(
     customerDetails,
     deliveryAddress,
   } = order;
+
+  const paymentStatus =
+    order.paymentStatus ??
+    "Pending";
+
+  const orderStatus =
+    order.status ??
+    "Pending";
 
   const html = `
     <!doctype html>
@@ -762,23 +863,32 @@ export async function sendOwnerOrderEmail(
               <strong>
                 Payment method:
               </strong>
+
               ${escapeHtml(
                 paymentLabel(
                   order.paymentMethod
                 )
               )}
+
               <br/>
 
               <strong>
                 Payment status:
               </strong>
-              Pending
+
+              ${escapeHtml(
+                paymentStatus
+              )}
+
               <br/>
 
               <strong>
                 Order status:
               </strong>
-              Pending
+
+              ${escapeHtml(
+                orderStatus
+              )}
             </div>
           </div>
         </div>
@@ -794,6 +904,677 @@ export async function sendOwnerOrderEmail(
 
     subject:
       `New order ${order.orderNumber} · ${money(
+        order.total
+      )}`,
+
+    html,
+  });
+}
+
+export async function sendCustomerCancellationEmail(
+  order: OrderEmailData
+) {
+  const resend =
+    getResend();
+
+  const from =
+    getFromEmail();
+
+  const itemsHtml =
+    buildItemsHtml(
+      order.items
+    );
+
+  const cancelledAt =
+    formatCancellationDate(
+      order.cancelledAt
+    );
+
+  const html = `
+    <!doctype html>
+    <html>
+      <body
+        style="
+          margin:0;
+          padding:0;
+          background:#fff8f3;
+          font-family:Arial,sans-serif;
+          color:#3e2926;
+        "
+      >
+        <div
+          style="
+            max-width:620px;
+            margin:0 auto;
+            padding:40px 20px;
+          "
+        >
+          <div
+            style="
+              background:#ffffff;
+              border:1px solid #eaded8;
+              border-radius:24px;
+              padding:32px;
+            "
+          >
+            <div
+              style="
+                font-size:12px;
+                font-weight:700;
+                letter-spacing:2px;
+                text-transform:uppercase;
+                color:#861417;
+              "
+            >
+              Velvet Crust
+            </div>
+
+            <h1
+              style="
+                margin:14px 0 8px;
+                color:#510000;
+                font-size:30px;
+              "
+            >
+              Your order has been cancelled.
+            </h1>
+
+            <p
+              style="
+                margin:0;
+                color:#765e59;
+                line-height:1.7;
+              "
+            >
+              Hi ${escapeHtml(
+                order.customerDetails.fullName
+              )},
+              your cancellation request
+              has been completed successfully.
+            </p>
+
+            <div
+              style="
+                margin-top:24px;
+                padding:18px;
+                border-radius:16px;
+                background:#fff3ed;
+              "
+            >
+              <div
+                style="
+                  font-size:12px;
+                  color:#765e59;
+                "
+              >
+                ORDER NUMBER
+              </div>
+
+              <div
+                style="
+                  margin-top:5px;
+                  font-size:20px;
+                  font-weight:700;
+                  color:#510000;
+                "
+              >
+                ${escapeHtml(
+                  order.orderNumber
+                )}
+              </div>
+
+              <div
+                style="
+                  margin-top:10px;
+                  font-size:13px;
+                  color:#765e59;
+                "
+              >
+                Cancelled:
+                ${escapeHtml(
+                  cancelledAt
+                )}
+              </div>
+            </div>
+
+            <div
+              style="
+                margin-top:24px;
+                padding:16px 18px;
+                border-radius:14px;
+                background:#fff1f1;
+                color:#9f2424;
+                font-size:14px;
+                line-height:1.7;
+              "
+            >
+              This order will no longer
+              be processed.
+            </div>
+
+            <h2
+              style="
+                margin-top:30px;
+                color:#510000;
+                font-size:20px;
+              "
+            >
+              Cancelled items
+            </h2>
+
+            <table
+              width="100%"
+              cellspacing="0"
+              cellpadding="0"
+            >
+              ${itemsHtml}
+            </table>
+
+            <table
+              width="100%"
+              cellspacing="0"
+              cellpadding="0"
+              style="
+                margin-top:20px;
+              "
+            >
+              <tr>
+                <td
+                  style="
+                    padding:6px 0;
+                    color:#765e59;
+                  "
+                >
+                  Subtotal
+                </td>
+
+                <td
+                  align="right"
+                  style="
+                    padding:6px 0;
+                  "
+                >
+                  ${money(
+                    order.subtotal
+                  )}
+                </td>
+              </tr>
+
+              <tr>
+                <td
+                  style="
+                    padding:6px 0;
+                    color:#765e59;
+                  "
+                >
+                  Delivery
+                </td>
+
+                <td
+                  align="right"
+                  style="
+                    padding:6px 0;
+                  "
+                >
+                  ${money(
+                    order.deliveryFee
+                  )}
+                </td>
+              </tr>
+
+              <tr>
+                <td
+                  style="
+                    padding-top:14px;
+                    font-size:18px;
+                    font-weight:700;
+                    color:#510000;
+                  "
+                >
+                  Order total
+                </td>
+
+                <td
+                  align="right"
+                  style="
+                    padding-top:14px;
+                    font-size:18px;
+                    font-weight:700;
+                    color:#861417;
+                  "
+                >
+                  ${money(
+                    order.total
+                  )}
+                </td>
+              </tr>
+            </table>
+
+            <div
+              style="
+                margin-top:28px;
+                padding:18px;
+                border-radius:16px;
+                background:#f8f5f3;
+                font-size:13px;
+                line-height:1.8;
+                color:#765e59;
+              "
+            >
+              <strong
+                style="
+                  color:#510000;
+                "
+              >
+                Payment method:
+              </strong>
+
+              ${escapeHtml(
+                paymentLabel(
+                  order.paymentMethod
+                )
+              )}
+
+              <br/>
+
+              <strong
+                style="
+                  color:#510000;
+                "
+              >
+                Payment status:
+              </strong>
+
+              ${escapeHtml(
+                order.paymentStatus ??
+                  "Pending"
+              )}
+            </div>
+
+            <p
+              style="
+                margin-top:28px;
+                color:#765e59;
+                line-height:1.7;
+              "
+            >
+              Thank you for choosing
+              Velvet Crust.
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return await resend.emails.send({
+    from,
+
+    to:
+      order.customerDetails.email,
+
+    subject:
+      `Order cancelled · ${order.orderNumber}`,
+
+    html,
+  });
+}
+
+export async function sendOwnerCancellationEmail(
+  order: OrderEmailData
+) {
+  const resend =
+    getResend();
+
+  const from =
+    getFromEmail();
+
+  const ownerEmail =
+    getOwnerEmail();
+
+  const itemsHtml =
+    buildItemsHtml(
+      order.items
+    );
+
+  const cancelledAt =
+    formatCancellationDate(
+      order.cancelledAt
+    );
+
+  const {
+    customerDetails,
+    deliveryAddress,
+  } = order;
+
+  const html = `
+    <!doctype html>
+    <html>
+      <body
+        style="
+          margin:0;
+          padding:0;
+          background:#f7f7f7;
+          font-family:Arial,sans-serif;
+          color:#292929;
+        "
+      >
+        <div
+          style="
+            max-width:680px;
+            margin:0 auto;
+            padding:40px 20px;
+          "
+        >
+          <div
+            style="
+              background:#ffffff;
+              border:1px solid #e9e9e9;
+              border-radius:20px;
+              padding:32px;
+            "
+          >
+            <div
+              style="
+                font-size:12px;
+                font-weight:700;
+                letter-spacing:2px;
+                color:#a32626;
+                text-transform:uppercase;
+              "
+            >
+              Order Cancellation
+            </div>
+
+            <h1
+              style="
+                margin:12px 0 8px;
+                color:#510000;
+              "
+            >
+              ${escapeHtml(
+                order.orderNumber
+              )}
+            </h1>
+
+            <p
+              style="
+                margin:0;
+                line-height:1.7;
+                color:#765e59;
+              "
+            >
+              A customer has cancelled
+              this Velvet Crust order.
+            </p>
+
+            <div
+              style="
+                margin-top:22px;
+                padding:16px 18px;
+                border-radius:14px;
+                background:#fff1f1;
+                color:#9f2424;
+                line-height:1.8;
+              "
+            >
+              <strong>
+                Order status:
+              </strong>
+              Cancelled
+              <br/>
+
+              <strong>
+                Cancelled at:
+              </strong>
+              ${escapeHtml(
+                cancelledAt
+              )}
+            </div>
+
+            <h2
+              style="
+                margin-top:28px;
+                color:#510000;
+              "
+            >
+              Customer
+            </h2>
+
+            <p
+              style="
+                line-height:1.8;
+              "
+            >
+              <strong>Name:</strong>
+              ${escapeHtml(
+                customerDetails.fullName
+              )}
+              <br/>
+
+              <strong>Email:</strong>
+              ${escapeHtml(
+                customerDetails.email
+              )}
+              <br/>
+
+              <strong>Phone:</strong>
+              ${escapeHtml(
+                customerDetails.phone
+              )}
+            </p>
+
+            <h2
+              style="
+                margin-top:28px;
+                color:#510000;
+              "
+            >
+              Delivery
+            </h2>
+
+            <p
+              style="
+                line-height:1.8;
+              "
+            >
+              <strong>Emirate:</strong>
+              ${escapeHtml(
+                deliveryAddress.emirate
+              )}
+              <br/>
+
+              <strong>Area:</strong>
+              ${escapeHtml(
+                deliveryAddress.area
+              )}
+              <br/>
+
+              <strong>Address:</strong>
+              ${escapeHtml(
+                deliveryAddress.addressLine
+              )}
+              <br/>
+
+              ${
+                deliveryAddress.building
+                  ? `
+                    <strong>
+                      Building / Villa:
+                    </strong>
+                    ${escapeHtml(
+                      deliveryAddress.building
+                    )}
+                    <br/>
+                  `
+                  : ""
+              }
+
+              ${
+                deliveryAddress.apartment
+                  ? `
+                    <strong>
+                      Apartment / Unit:
+                    </strong>
+                    ${escapeHtml(
+                      deliveryAddress.apartment
+                    )}
+                    <br/>
+                  `
+                  : ""
+              }
+
+              ${
+                deliveryAddress.notes
+                  ? `
+                    <strong>
+                      Notes:
+                    </strong>
+                    ${escapeHtml(
+                      deliveryAddress.notes
+                    )}
+                  `
+                  : ""
+              }
+            </p>
+
+            <h2
+              style="
+                margin-top:28px;
+                color:#510000;
+              "
+            >
+              Cancelled items
+            </h2>
+
+            <table
+              width="100%"
+              cellspacing="0"
+              cellpadding="0"
+            >
+              ${itemsHtml}
+            </table>
+
+            <table
+              width="100%"
+              cellspacing="0"
+              cellpadding="0"
+              style="
+                margin-top:22px;
+              "
+            >
+              <tr>
+                <td>
+                  Subtotal
+                </td>
+
+                <td align="right">
+                  ${money(
+                    order.subtotal
+                  )}
+                </td>
+              </tr>
+
+              <tr>
+                <td
+                  style="
+                    padding-top:8px;
+                  "
+                >
+                  Delivery
+                </td>
+
+                <td
+                  align="right"
+                  style="
+                    padding-top:8px;
+                  "
+                >
+                  ${money(
+                    order.deliveryFee
+                  )}
+                </td>
+              </tr>
+
+              <tr>
+                <td
+                  style="
+                    padding-top:14px;
+                    font-size:18px;
+                    font-weight:700;
+                  "
+                >
+                  Total
+                </td>
+
+                <td
+                  align="right"
+                  style="
+                    padding-top:14px;
+                    font-size:18px;
+                    font-weight:700;
+                    color:#861417;
+                  "
+                >
+                  ${money(
+                    order.total
+                  )}
+                </td>
+              </tr>
+            </table>
+
+            <div
+              style="
+                margin-top:28px;
+                padding:18px;
+                background:#fff3ed;
+                border-radius:14px;
+                line-height:1.8;
+              "
+            >
+              <strong>
+                Payment method:
+              </strong>
+
+              ${escapeHtml(
+                paymentLabel(
+                  order.paymentMethod
+                )
+              )}
+
+              <br/>
+
+              <strong>
+                Payment status:
+              </strong>
+
+              ${escapeHtml(
+                order.paymentStatus ??
+                  "Pending"
+              )}
+
+              <br/>
+
+              <strong>
+                Order status:
+              </strong>
+
+              Cancelled
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return await resend.emails.send({
+    from,
+
+    to:
+      ownerEmail,
+
+    subject:
+      `Order cancelled ${order.orderNumber} · ${money(
         order.total
       )}`,
 
@@ -836,6 +1617,56 @@ export async function sendOrderCreatedEmails(
   ) {
     console.error(
       "Owner order email failed:",
+      ownerResult.reason
+    );
+  }
+
+  return {
+    customerSent:
+      customerResult.status ===
+      "fulfilled",
+
+    ownerSent:
+      ownerResult.status ===
+      "fulfilled",
+  };
+}
+
+export async function sendOrderCancellationEmails(
+  order: OrderEmailData
+) {
+  const results =
+    await Promise.allSettled([
+      sendCustomerCancellationEmail(
+        order
+      ),
+
+      sendOwnerCancellationEmail(
+        order
+      ),
+    ]);
+
+  const [
+    customerResult,
+    ownerResult,
+  ] = results;
+
+  if (
+    customerResult.status ===
+    "rejected"
+  ) {
+    console.error(
+      "Customer cancellation email failed:",
+      customerResult.reason
+    );
+  }
+
+  if (
+    ownerResult.status ===
+    "rejected"
+  ) {
+    console.error(
+      "Owner cancellation email failed:",
       ownerResult.reason
     );
   }

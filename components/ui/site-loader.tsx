@@ -110,6 +110,7 @@ export default function SiteLoader() {
                   src="/images/logo.png"
                   alt="Velvet Crust"
                   fill
+                  sizes="(max-width: 640px) 125px, 150px"
                   priority
                   className="rounded-full object-center "
                 />

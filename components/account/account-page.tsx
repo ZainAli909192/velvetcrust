@@ -1,7 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+
+import {
+  useRouter,
+} from "next/navigation";
+
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import axios from "axios";
+
 import {
   ArrowRight,
   Clock3,
@@ -9,29 +21,55 @@ import {
   PackageCheck,
   ShoppingBag,
 } from "lucide-react";
-import { motion } from "framer-motion";
+
+import {
+  motion,
+} from "framer-motion";
 
 import AuthPanel from "@/components/order/auth-panel";
-import { useAuth } from "@/components/store/auth-context";
-import { useCart } from "@/components/store/cart-context";
+
+import {
+  useAuth,
+} from "@/components/store/auth-context";
+
+import {
+  useCart,
+} from "@/components/store/cart-context";
+
 import Button from "@/components/ui/button";
 
 type OrderItem = {
-  id?: string;
-  name?: string;
-  title?: string;
-  productName?: string;
-  quantity?: number;
-  qty?: number;
+  name: string;
+  image: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
 };
 
 type AccountOrder = {
-  id: string;
-  status: string;
-  date: string;
+  orderNumber: string;
+
+  items:
+    OrderItem[];
+
   itemCount: number;
+
+  subtotal: number;
+  deliveryFee: number;
   total: number;
-  items?: readonly OrderItem[];
+
+  paymentMethod: string;
+  paymentStatus: string;
+  status: string;
+
+  createdAt: string;
+};
+
+type OrdersResponse = {
+  success: boolean;
+
+  orders:
+    AccountOrder[];
 };
 
 export default function AccountPage({
@@ -39,9 +77,104 @@ export default function AccountPage({
 }: {
   next?: string;
 }) {
-  const router = useRouter();
-  const { user, orders, signOut, isReady } = useAuth();
-  const { totalItems } = useCart();
+  const router =
+    useRouter();
+
+  const {
+    user,
+    signOut,
+    isReady,
+  } = useAuth();
+
+  const {
+    totalItems,
+  } = useCart();
+
+  const [
+    orders,
+    setOrders,
+  ] =
+    useState<AccountOrder[]>(
+      []
+    );
+
+  const [
+    ordersLoading,
+    setOrdersLoading,
+  ] = useState(true);
+
+  const [
+    ordersError,
+    setOrdersError,
+  ] = useState("");
+
+  const loadOrders =
+    useCallback(
+      async () => {
+        if (!user) {
+          setOrders([]);
+          setOrdersLoading(
+            false
+          );
+
+          return;
+        }
+
+        setOrdersLoading(
+          true
+        );
+
+        setOrdersError("");
+
+        try {
+          const response =
+            await axios.get<OrdersResponse>(
+              "/api/orders"
+            );
+
+          if (
+            !response.data
+              .success
+          ) {
+            throw new Error(
+              "Unable to load orders."
+            );
+          }
+
+          setOrders(
+            response.data
+              .orders ?? []
+          );
+        } catch (error) {
+          console.error(
+            "Load orders error:",
+            error
+          );
+
+          setOrders([]);
+
+          setOrdersError(
+            "We couldn't load your orders right now."
+          );
+        } finally {
+          setOrdersLoading(
+            false
+          );
+        }
+      },
+      [user]
+    );
+
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
+    void loadOrders();
+  }, [
+    isReady,
+    loadOrders,
+  ]);
 
   if (!isReady) {
     return (
@@ -60,9 +193,14 @@ export default function AccountPage({
           )}
 
           <AuthPanel
-            checkout={Boolean(next)}
+            checkout={
+              Boolean(next)
+            }
             onSuccess={() =>
-              router.push(next ?? "/account")
+              router.push(
+                next ??
+                  "/account"
+              )
             }
           />
         </div>
@@ -70,28 +208,62 @@ export default function AccountPage({
     );
   }
 
-  const recent = orders[0] as AccountOrder | undefined;
+  const recent =
+    orders[0];
 
-  const totalSpent = orders.reduce(
-    (total, order) => total + order.total,
-    0
-  );
+  const totalSpent =
+    orders.reduce(
+      (
+        total,
+        order
+      ) =>
+        total +
+        order.total,
+      0
+    );
 
   const metrics = [
     {
-      label: "Total orders",
-      value: String(orders.length),
-      icon: PackageCheck,
+      label:
+        "Total orders",
+
+      value:
+        ordersLoading
+          ? "—"
+          : String(
+              orders.length
+            ),
+
+      icon:
+        PackageCheck,
     },
+
     {
-      label: "Recent order",
-      value: recent?.id ?? "None yet",
-      icon: Clock3,
+      label:
+        "Recent order",
+
+      value:
+        ordersLoading
+          ? "—"
+          : recent
+            ?.orderNumber ??
+            "None yet",
+
+      icon:
+        Clock3,
     },
+
     {
-      label: "Cart items",
-      value: String(totalItems),
-      icon: ShoppingBag,
+      label:
+        "Cart items",
+
+      value:
+        String(
+          totalItems
+        ),
+
+      icon:
+        ShoppingBag,
     },
   ];
 
@@ -109,7 +281,12 @@ export default function AccountPage({
           }}
           transition={{
             duration: 0.55,
-            ease: [0.22, 1, 0.36, 1],
+            ease: [
+              0.22,
+              1,
+              0.36,
+              1,
+            ],
           }}
           className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"
         >
@@ -119,12 +296,15 @@ export default function AccountPage({
             </p>
 
             <h1 className="mt-2 font-serif text-4xl text-[var(--brand-text-dark)] sm:text-5xl">
-              Welcome, {user.name}.
+              Welcome,{" "}
+              {user.name}.
             </h1>
 
             <p className="mt-2 max-w-[500px] text-sm leading-6 text-[var(--brand-muted)]">
-              Manage your orders and continue where you
-              left off.
+              Manage your
+              orders and
+              continue where
+              you left off.
             </p>
           </div>
 
@@ -132,8 +312,14 @@ export default function AccountPage({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={signOut}
-            iconLeft={<LogOut size={16} />}
+            onClick={
+              signOut
+            }
+            iconLeft={
+              <LogOut
+                size={16}
+              />
+            }
             className="min-h-11 self-start text-[var(--brand-muted)] hover:text-[var(--brand-primary)]"
           >
             Sign out
@@ -145,17 +331,12 @@ export default function AccountPage({
             opacity: 0,
             y: 25,
           }}
-          whileInView={{
+          animate={{
             opacity: 1,
             y: 0,
           }}
-          viewport={{
-            once: false,
-            amount: 0.25,
-          }}
           transition={{
             duration: 0.55,
-            ease: [0.22, 1, 0.36, 1],
           }}
           className="mt-10 grid grid-cols-2 gap-x-5 gap-y-8 border-y border-[var(--brand-border)] py-7 sm:grid-cols-3 sm:gap-x-8"
         >
@@ -170,11 +351,17 @@ export default function AccountPage({
                 icon={
                   <Icon
                     size={20}
-                    strokeWidth={1.7}
+                    strokeWidth={
+                      1.7
+                    }
                   />
                 }
-                label={label}
-                value={value}
+                label={
+                  label
+                }
+                value={
+                  value
+                }
               />
             )
           )}
@@ -185,17 +372,12 @@ export default function AccountPage({
             opacity: 0,
             y: 30,
           }}
-          whileInView={{
+          animate={{
             opacity: 1,
             y: 0,
           }}
-          viewport={{
-            once: false,
-            amount: 0.2,
-          }}
           transition={{
             duration: 0.6,
-            ease: [0.22, 1, 0.36, 1],
           }}
           className="mt-10"
         >
@@ -210,41 +392,67 @@ export default function AccountPage({
               </h2>
             </div>
 
-            {orders.length > 0 && (
-              <Link
-                href="/account/orders"
-                className="group inline-flex shrink-0 items-center gap-1.5 pb-1 text-xs font-semibold text-[var(--brand-primary)] transition-opacity duration-300 hover:opacity-70 sm:text-sm"
-              >
-                View all
+            {!ordersLoading &&
+              orders.length >
+                0 && (
+                <Link
+                  href="/account/orders"
+                  className="group inline-flex shrink-0 items-center gap-1.5 pb-1 text-xs font-semibold text-[var(--brand-primary)] transition-opacity duration-300 hover:opacity-70 sm:text-sm"
+                >
+                  View all
 
-                <ArrowRight
-                  size={14}
-                  className="transition-transform duration-300 group-hover:translate-x-1"
-                />
-              </Link>
-            )}
+                  <ArrowRight
+                    size={
+                      14
+                    }
+                    className="transition-transform duration-300 group-hover:translate-x-1"
+                  />
+                </Link>
+              )}
           </div>
 
-          {recent ? (
-            <RecentOrder order={recent} />
+          {ordersLoading ? (
+            <OrdersLoading />
+          ) : ordersError ? (
+            <OrdersError
+              onRetry={
+                loadOrders
+              }
+            />
+          ) : recent ? (
+            <RecentOrder
+              order={
+                recent
+              }
+            />
           ) : (
             <EmptyOrders />
           )}
 
-          {orders.length > 0 && (
-            <div className="mt-5 flex items-center justify-between">
-              <p className="text-xs text-[var(--brand-muted)]">
-                {orders.length}{" "}
-                {orders.length === 1
-                  ? "order"
-                  : "orders"}
-              </p>
+          {!ordersLoading &&
+            !ordersError &&
+            orders.length >
+              0 && (
+              <div className="mt-5 flex items-center justify-between">
+                <p className="text-xs text-[var(--brand-muted)]">
+                  {
+                    orders.length
+                  }{" "}
+                  {orders.length ===
+                  1
+                    ? "order"
+                    : "orders"}
+                </p>
 
-              <p className="text-xs font-semibold text-[var(--brand-primary)] sm:text-sm">
-                AED {totalSpent.toFixed(2)} total
-              </p>
-            </div>
-          )}
+                <p className="text-xs font-semibold text-[var(--brand-primary)] sm:text-sm">
+                  AED{" "}
+                  {totalSpent.toFixed(
+                    2
+                  )}{" "}
+                  total
+                </p>
+              </div>
+            )}
         </motion.section>
       </div>
     </section>
@@ -256,7 +464,9 @@ function Metric({
   label,
   value,
 }: {
-  icon: React.ReactNode;
+  icon:
+    React.ReactNode;
+
   label: string;
   value: string;
 }) {
@@ -288,19 +498,25 @@ function Metric({
 function RecentOrder({
   order,
 }: {
-  order: AccountOrder;
+  order:
+    AccountOrder;
 }) {
-  const date = new Intl.DateTimeFormat(
-    "en-AE",
-    {
-      dateStyle: "medium",
-    }
-  ).format(new Date(order.date));
+  const date =
+    new Intl.DateTimeFormat(
+      "en-AE",
+      {
+        dateStyle:
+          "medium",
+      }
+    ).format(
+      new Date(
+        order.createdAt
+      )
+    );
 
   const cancelled =
-    order.status.toLowerCase() === "cancelled";
-
-  const items = order.items ?? [];
+    order.status.toLowerCase() ===
+    "cancelled";
 
   return (
     <motion.div
@@ -309,18 +525,13 @@ function RecentOrder({
         y: 20,
         scale: 0.98,
       }}
-      whileInView={{
+      animate={{
         opacity: 1,
         y: 0,
         scale: 1,
       }}
-      viewport={{
-        once: false,
-        amount: 0.3,
-      }}
       transition={{
         duration: 0.5,
-        ease: [0.22, 1, 0.36, 1],
       }}
       className="mt-6 rounded-[24px] border border-[var(--brand-border)] bg-white p-5 shadow-[0_12px_35px_rgba(81,0,0,0.035)] sm:p-6"
     >
@@ -331,26 +542,18 @@ function RecentOrder({
           </p>
 
           <p className="mt-1 truncate font-serif text-xl text-[var(--brand-text-dark)] sm:text-2xl">
-            {order.id}
+            {
+              order.orderNumber
+            }
           </p>
         </div>
 
         <span
-          className={`
-            shrink-0
-            rounded-full
-            px-3
-            py-1.5
-            text-[9px]
-            font-semibold
-            uppercase
-            tracking-[0.08em]
-            ${
-              cancelled
-                ? "bg-red-50 text-red-700"
-                : "bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]"
-            }
-          `}
+          className={`shrink-0 rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${
+            cancelled
+              ? "bg-red-50 text-red-700"
+              : "bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]"
+          }`}
         >
           {order.status}
         </span>
@@ -373,10 +576,25 @@ function RecentOrder({
           </p>
 
           <p className="mt-1 text-sm font-medium text-[var(--brand-text-dark)]">
-            {order.itemCount}{" "}
-            {order.itemCount === 1
+            {
+              order.itemCount
+            }{" "}
+            {order.itemCount ===
+            1
               ? "item"
               : "items"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--brand-muted)]">
+            Payment
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-[var(--brand-text-dark)]">
+            {
+              order.paymentStatus
+            }
           </p>
         </div>
       </div>
@@ -386,44 +604,33 @@ function RecentOrder({
           Ordered items
         </p>
 
-        {items.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {items.map((item, index) => {
-              const name =
-                item.name ??
-                item.title ??
-                item.productName ??
-                "Cheesecake";
+        <div className="mt-3 flex flex-wrap gap-2">
+          {order.items.map(
+            (
+              item,
+              index
+            ) => (
+              <span
+                key={`${item.name}-${index}`}
+                className="inline-flex items-center rounded-full bg-[var(--brand-primary-soft)] px-3 py-2 text-xs font-medium text-[var(--brand-primary)]"
+              >
+                {
+                  item.name
+                }
 
-              const quantity =
-                item.quantity ??
-                item.qty ??
-                1;
-
-              return (
-                <span
-                  key={
-                    item.id ??
-                    `${name}-${index}`
-                  }
-                  className="inline-flex items-center rounded-full bg-[var(--brand-primary-soft)] px-3 py-2 text-xs font-medium text-[var(--brand-primary)]"
-                >
-                  {name}
-
-                  {quantity > 1 && (
-                    <span className="ml-1.5 opacity-70">
-                      × {quantity}
-                    </span>
-                  )}
-                </span>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-[var(--brand-muted)]">
-            Order item details unavailable.
-          </p>
-        )}
+                {item.quantity >
+                  1 && (
+                  <span className="ml-1.5 opacity-70">
+                    ×{" "}
+                    {
+                      item.quantity
+                    }
+                  </span>
+                )}
+              </span>
+            )
+          )}
+        </div>
       </div>
 
       <div className="mt-5 flex items-end justify-between gap-4 border-t border-[var(--brand-border)] pt-5">
@@ -433,13 +640,16 @@ function RecentOrder({
           </p>
 
           <p className="mt-1 font-serif text-xl text-[var(--brand-primary)] sm:text-2xl">
-            AED {order.total.toFixed(2)}
+            AED{" "}
+            {order.total.toFixed(
+              2
+            )}
           </p>
         </div>
 
         <Link
           href={`/account/orders/${encodeURIComponent(
-            order.id
+            order.orderNumber
           )}`}
           className="group inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[var(--brand-primary)] px-5 text-[11px] font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:opacity-90 sm:px-6"
         >
@@ -455,6 +665,50 @@ function RecentOrder({
   );
 }
 
+function OrdersLoading() {
+  return (
+    <div className="mt-6 animate-pulse rounded-[24px] border border-[var(--brand-border)] bg-white p-6">
+      <div className="h-3 w-20 rounded bg-[var(--brand-primary-soft)]" />
+
+      <div className="mt-3 h-7 w-52 rounded bg-[var(--brand-primary-soft)]" />
+
+      <div className="mt-6 h-px bg-[var(--brand-border)]" />
+
+      <div className="mt-5 grid grid-cols-2 gap-5">
+        <div className="h-10 rounded bg-[var(--brand-primary-soft)]" />
+
+        <div className="h-10 rounded bg-[var(--brand-primary-soft)]" />
+      </div>
+    </div>
+  );
+}
+
+function OrdersError({
+  onRetry,
+}: {
+  onRetry:
+    () => Promise<void>;
+}) {
+  return (
+    <div className="mt-6 rounded-[24px] border border-red-100 bg-white px-5 py-10 text-center">
+      <p className="text-sm text-red-700">
+        We couldn&apos;t load your orders.
+      </p>
+
+      <Button
+        type="button"
+        size="sm"
+        className="mt-5"
+        onClick={() =>
+          void onRetry()
+        }
+      >
+        Try again
+      </Button>
+    </div>
+  );
+}
+
 function EmptyOrders() {
   return (
     <motion.div
@@ -462,17 +716,12 @@ function EmptyOrders() {
         opacity: 0,
         scale: 0.96,
       }}
-      whileInView={{
+      animate={{
         opacity: 1,
         scale: 1,
       }}
-      viewport={{
-        once: false,
-        amount: 0.3,
-      }}
       transition={{
         duration: 0.5,
-        ease: [0.22, 1, 0.36, 1],
       }}
       className="mt-6 rounded-[24px] border border-[var(--brand-border)] bg-white px-5 py-12 text-center shadow-[0_12px_35px_rgba(81,0,0,0.03)]"
     >
@@ -488,8 +737,7 @@ function EmptyOrders() {
       </p>
 
       <p className="mx-auto mt-2 max-w-[280px] text-sm leading-6 text-[var(--brand-muted)]">
-        Your Velvet Crust orders will appear
-        here once you place your first order.
+        Your Velvet Crust orders will appear here once you place your first order.
       </p>
 
       <Button

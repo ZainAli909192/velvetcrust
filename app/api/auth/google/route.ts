@@ -14,7 +14,7 @@ const GOOGLE_CLIENT_ID =
 
 if (!GOOGLE_CLIENT_ID) {
   throw new Error(
-    "NEXT_PUBLIC_GOOGLE_CLIENT_ID is not defined"
+    "GOOGLE_CLIENT_ID is not defined"
   );
 }
 
