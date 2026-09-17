@@ -126,8 +126,8 @@ export async function GET(
       )
         ? order.items.reduce(
             (
-              total,
-              item
+              total: number,
+              item: import("@/models/Order").OrderItem
             ) =>
               total +
               Number(

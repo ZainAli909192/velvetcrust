@@ -468,7 +468,7 @@ export async function createOrder({
 
       items:
         order.items.map(
-          (item) => ({
+          (item: import("@/models/Order").OrderItem) => ({
             name:
               item.name,
 

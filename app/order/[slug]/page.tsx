@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { cheesecakes } from "@/data/cheesecakes";
+import { connectDB } from "@/lib/mongodb";
+import Product from "@/models/Product";
 import OrderCheckout from "@/components/order/order-checkout";
 import Header from "@/components/home/header";
 import Footer from "@/components/home/footer";
@@ -16,13 +17,27 @@ export default async function OrderPage({
 }: OrderPageProps) {
   const { slug } = await params;
 
-  const cheesecake = cheesecakes.find(
-    (item) => item.slug === slug
-  );
+  await connectDB();
 
-  if (!cheesecake) {
+  const product = await Product.findOne({
+    slug,
+    isActive: true,
+  })
+    .select("_id name slug description price image")
+    .lean();
+
+  if (!product) {
     notFound();
   }
+
+  const cheesecake = {
+    id: product._id.toString(),
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    price: product.price,
+    image: product.image,
+  };
 
   return (
     <>

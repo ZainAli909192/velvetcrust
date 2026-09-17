@@ -57,7 +57,7 @@ export async function getCustomerOrders() {
 
           items:
             order.items.map(
-              (item) => ({
+              (item: import("@/models/Order").OrderItem) => ({
                 name:
                   item.name,
 
@@ -78,8 +78,8 @@ export async function getCustomerOrders() {
           itemCount:
             order.items.reduce(
               (
-                total,
-                item
+                total: number,
+                item: import("@/models/Order").OrderItem
               ) =>
                 total +
                 item.quantity,

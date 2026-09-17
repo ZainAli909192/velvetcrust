@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import PaymentPage from "@/components/checkout/payment-page";
 import Header from "@/components/home/header";
 
@@ -10,7 +11,9 @@ export default function PaymentRoute() {
     <>
       <Header />
       <main className="pt-20 lg:pt-[92px]">
-        <PaymentPage />
+        <Suspense fallback={<div className="min-h-[70vh] bg-[var(--brand-background)]" />}>
+          <PaymentPage />
+        </Suspense>
       </main>
     </>
   );

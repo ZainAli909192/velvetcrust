@@ -274,7 +274,7 @@ export async function PATCH(
 
                     items:
                         updatedOrder.items.map(
-                            (item) => ({
+                            (item: import("@/models/Order").OrderItem) => ({
                                 name:
                                     item.name,
 

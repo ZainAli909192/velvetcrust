@@ -5,6 +5,14 @@ import {
   Types,
 } from "mongoose";
 
+export type OrderItem = {
+  name: string;
+  image: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+};
+
 const orderItemSchema =
   new Schema(
     {
