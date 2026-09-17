@@ -213,7 +213,7 @@ export default function Hero() {
   variants={fadeUp}
   className="
     relative
-    -top-10
+    -top-17
     mt-6
     max-w-[355px]
 
