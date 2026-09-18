@@ -3,6 +3,7 @@ import {
   CreditCard,
   ShieldCheck,
 } from "lucide-react";
+import Image from "next/image";
 
 export type PaymentMethod =
   | "card"
@@ -243,8 +244,14 @@ function PaymentMark({
     "apple_pay"
   ) {
     return (
-      <span className="flex h-11 min-w-14 items-center justify-center rounded-xl bg-black px-3 text-lg font-semibold text-white">
-        
+      <span className="flex h-11 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-black">
+        <Image
+          src="/images/payments/applepay.png"
+          alt=""
+          width={44}
+          height={44}
+          className="h-11 w-11 object-contain"
+        />
       </span>
     );
   }
@@ -254,10 +261,14 @@ function PaymentMark({
     "google_pay"
   ) {
     return (
-      <span className="flex h-11 min-w-14 items-center justify-center rounded-xl border border-[var(--brand-border)] bg-white px-3 text-base font-bold">
-        <span className="text-[#4285F4]">
-          G
-        </span>
+      <span className="flex h-11 w-14 shrink-0 items-center justify-center rounded-xl border border-[var(--brand-border)] bg-white">
+        <Image
+          src="/images/payments/googlepay.png"
+          alt=""
+          width={48}
+          height={40}
+          className="h-10 w-12 object-contain"
+        />
       </span>
     );
   }
@@ -267,15 +278,27 @@ function PaymentMark({
     "tabby"
   ) {
     return (
-      <span className="flex h-11 min-w-14 items-center justify-center rounded-xl bg-[#3fefc6] px-2 text-xs font-bold text-black">
-        tabby
+      <span className="flex h-11 w-14 shrink-0 items-center justify-center rounded-xl bg-black">
+        <Image
+          src="/images/payments/tabby-logo.svg"
+          alt=""
+          width={48}
+          height={20}
+          className="h-5 w-12 object-contain"
+        />
       </span>
     );
   }
 
   return (
-    <span className="flex h-11 min-w-14 items-center justify-center rounded-xl bg-[#ffcac8] px-2 text-xs font-bold text-black">
-      tamara
+    <span className="flex h-11 w-14 shrink-0 items-center justify-center rounded-xl border border-[var(--brand-border)] bg-white">
+      <Image
+        src="/images/payments/tamara.png"
+        alt=""
+        width={36}
+        height={36}
+        className="h-9 w-9 rounded-md object-contain"
+      />
     </span>
   );
 }
