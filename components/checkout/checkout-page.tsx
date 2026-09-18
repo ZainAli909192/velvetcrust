@@ -20,6 +20,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  LocateFixed,
+  LoaderCircle,
   MapPin,
   Plus,
   ShoppingBag,
@@ -39,6 +41,10 @@ import {
 import {
   useCheckout,
 } from "@/components/store/checkout-context";
+
+import type {
+  CheckoutDetails,
+} from "@/types/checkout";
 
 const emirates = [
   "Abu Dhabi",
@@ -65,6 +71,27 @@ type SavedAddress = {
 type AddressesResponse = {
   success: boolean;
   addresses: SavedAddress[];
+};
+
+type ReverseGeocodeResponse = {
+  success: boolean;
+
+  location?: {
+    emirate: string;
+    area: string;
+    addressLine: string;
+  };
+
+  message?: string;
+};
+
+type ManualAddress = {
+  emirate: string;
+  area: string;
+  addressLine: string;
+  building: string;
+  apartment: string;
+  notes: string;
 };
 
 const MANUAL_ADDRESS =
@@ -118,6 +145,16 @@ export default function CheckoutPage() {
   ] = useState("");
 
   const [
+    saveAddressError,
+    setSaveAddressError,
+  ] = useState("");
+
+  const [
+    savingAddress,
+    setSavingAddress,
+  ] = useState(false);
+
+  const [
     selectedAddressId,
     setSelectedAddressId,
   ] =
@@ -130,21 +167,73 @@ export default function CheckoutPage() {
     setAddressesReady,
   ] = useState(false);
 
+  const [
+    manualAddress,
+    setManualAddress,
+  ] =
+    useState<ManualAddress>({
+      emirate:
+        details.emirate,
+
+      area:
+        details.area,
+
+      addressLine:
+        details.addressLine,
+
+      building:
+        details.building,
+
+      apartment:
+        details.apartment,
+
+      notes:
+        details.notes,
+    });
+
+  const [
+    locating,
+    setLocating,
+  ] = useState(false);
+
+  const [
+    locationError,
+    setLocationError,
+  ] = useState("");
+
+  const [
+    locationSuccess,
+    setLocationSuccess,
+  ] = useState(false);
+
   useEffect(() => {
     if (
       !isReady ||
       !user ||
       isGuest
     ) {
-      setAddresses([]);
-      setSelectedAddressId(
-        MANUAL_ADDRESS
-      );
-      setAddressesReady(
-        true
-      );
+      const resetTimer =
+        window.setTimeout(
+          () => {
+            setAddresses(
+              []
+            );
 
-      return;
+            setSelectedAddressId(
+              MANUAL_ADDRESS
+            );
+
+            setAddressesReady(
+              true
+            );
+          },
+          0
+        );
+
+      return () =>
+        window.clearTimeout(
+          resetTimer
+        );
     }
 
     let active = true;
@@ -154,7 +243,9 @@ export default function CheckoutPage() {
         true
       );
 
-      setAddressesError("");
+      setAddressesError(
+        ""
+      );
 
       try {
         const response =
@@ -252,10 +343,206 @@ export default function CheckoutPage() {
         selectedAddress
     );
 
-  function continueToPayment(
+  function updateManualAddress<
+    K extends keyof ManualAddress,
+  >(
+    key: K,
+    value: ManualAddress[K]
+  ) {
+    setManualAddress(
+      (current) => ({
+        ...current,
+        [key]: value,
+      })
+    );
+
+    if (
+      locationSuccess
+    ) {
+      setLocationSuccess(
+        false
+      );
+    }
+  }
+
+  async function useCurrentLocation() {
+    if (locating) {
+      return;
+    }
+
+    setLocationError(
+      ""
+    );
+
+    setLocationSuccess(
+      false
+    );
+
+    setSelectedAddressId(
+      MANUAL_ADDRESS
+    );
+
+    if (
+      !navigator.geolocation
+    ) {
+      setLocationError(
+        "Current location is not supported by this browser."
+      );
+
+      return;
+    }
+
+    setLocating(
+      true
+    );
+
+    navigator.geolocation.getCurrentPosition(
+      async (
+        position
+      ) => {
+        try {
+          const response =
+            await axios.post<ReverseGeocodeResponse>(
+              "/api/location/reverse-geocode",
+              {
+                latitude:
+                  position.coords
+                    .latitude,
+
+                longitude:
+                  position.coords
+                    .longitude,
+              }
+            );
+
+          const location =
+            response.data
+              .location;
+
+          if (
+            !response.data
+              .success ||
+            !location
+          ) {
+            setLocationError(
+              response.data
+                .message ||
+                "Unable to find your address."
+            );
+
+            return;
+          }
+
+          setManualAddress(
+            (current) => ({
+              ...current,
+
+              emirate:
+                location.emirate,
+
+              area:
+                location.area,
+
+              addressLine:
+                location.addressLine,
+            })
+          );
+
+          setLocationSuccess(
+            true
+          );
+        } catch (error) {
+          const message =
+            axios.isAxiosError(
+              error
+            ) &&
+            typeof error
+              .response?.data
+              ?.message ===
+              "string"
+              ? error.response
+                  .data.message
+              : "Unable to find your address from your current location.";
+
+          setLocationError(
+            message
+          );
+        } finally {
+          setLocating(
+            false
+          );
+        }
+      },
+
+      (error) => {
+        setLocating(
+          false
+        );
+
+        if (
+          error.code ===
+          error.PERMISSION_DENIED
+        ) {
+          setLocationError(
+            "Location access was denied. Allow location access in your browser or enter the address manually."
+          );
+
+          return;
+        }
+
+        if (
+          error.code ===
+          error.POSITION_UNAVAILABLE
+        ) {
+          setLocationError(
+            "Your current location could not be determined. Please enter the address manually."
+          );
+
+          return;
+        }
+
+        if (
+          error.code ===
+          error.TIMEOUT
+        ) {
+          setLocationError(
+            "Location detection took too long. Please try again."
+          );
+
+          return;
+        }
+
+        setLocationError(
+          "Unable to detect your current location."
+        );
+      },
+
+      {
+        enableHighAccuracy:
+          true,
+
+        timeout: 10000,
+
+        maximumAge: 60000,
+      }
+    );
+  }
+
+  async function continueToPayment(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
+
+    if (
+      savingAddress ||
+      locating
+    ) {
+      return;
+    }
+
+    setSaveAddressError(
+      ""
+    );
 
     const formData =
       new FormData(
@@ -283,11 +570,13 @@ export default function CheckoutPage() {
         ) ?? ""
       ).trim();
 
+    let nextDetails: CheckoutDetails;
+
     if (
       usingSavedAddress &&
       selectedAddress
     ) {
-      saveDetails({
+      nextDetails = {
         fullName,
         email,
         phone,
@@ -312,56 +601,121 @@ export default function CheckoutPage() {
         notes:
           selectedAddress.notes ??
           "",
-      });
+      };
     } else {
-      saveDetails({
+      nextDetails = {
         fullName,
         email,
         phone,
 
         emirate:
-          String(
-            formData.get(
-              "emirate"
-            ) ?? ""
-          ).trim(),
+          manualAddress.emirate.trim(),
 
         area:
-          String(
-            formData.get(
-              "area"
-            ) ?? ""
-          ).trim(),
+          manualAddress.area.trim(),
 
         addressLine:
-          String(
-            formData.get(
-              "addressLine"
-            ) ?? ""
-          ).trim(),
+          manualAddress.addressLine.trim(),
 
         building:
-          String(
-            formData.get(
-              "building"
-            ) ?? ""
-          ).trim(),
+          manualAddress.building.trim(),
 
         apartment:
-          String(
-            formData.get(
-              "apartment"
-            ) ?? ""
-          ).trim(),
+          manualAddress.apartment.trim(),
 
         notes:
-          String(
-            formData.get(
-              "notes"
-            ) ?? ""
-          ).trim(),
-      });
+          manualAddress.notes.trim(),
+      };
     }
+
+    if (
+      user &&
+      !isGuest &&
+      !usingSavedAddress
+    ) {
+      const alreadySaved =
+        addresses.some(
+          (address) =>
+            address.emirate ===
+              nextDetails.emirate &&
+            address.area ===
+              nextDetails.area &&
+            address.addressLine ===
+              nextDetails.addressLine &&
+            (address.building ??
+              "") ===
+              nextDetails.building &&
+            (address.apartment ??
+              "") ===
+              nextDetails.apartment &&
+            (address.notes ??
+              "") ===
+              nextDetails.notes
+        );
+
+      if (!alreadySaved) {
+        setSavingAddress(
+          true
+        );
+
+        try {
+          await axios.post(
+            "/api/account/addresses",
+            {
+              label:
+                addresses.length ===
+                0
+                  ? "Home"
+                  : "Other",
+
+              emirate:
+                nextDetails.emirate,
+
+              area:
+                nextDetails.area,
+
+              addressLine:
+                nextDetails.addressLine,
+
+              building:
+                nextDetails.building,
+
+              apartment:
+                nextDetails.apartment,
+
+              notes:
+                nextDetails.notes,
+            }
+          );
+        } catch (error) {
+          const message =
+            axios.isAxiosError(
+              error
+            ) &&
+            typeof error
+              .response?.data
+              ?.message ===
+              "string"
+              ? error.response
+                  .data.message
+              : "Unable to save your address. Please try again.";
+
+          setSaveAddressError(
+            message
+          );
+
+          return;
+        } finally {
+          setSavingAddress(
+            false
+          );
+        }
+      }
+    }
+
+    saveDetails(
+      nextDetails
+    );
 
     router.push(
       isGuest
@@ -432,6 +786,14 @@ export default function CheckoutPage() {
       </section>
     );
   }
+
+  const showManualAddress =
+    !user ||
+    isGuest ||
+    addresses.length ===
+      0 ||
+    selectedAddressId ===
+      MANUAL_ADDRESS;
 
   return (
     <section className="min-h-screen bg-[var(--brand-background)] px-4 pb-32 pt-7 sm:px-8 lg:px-12 lg:pb-20 lg:pt-10">
@@ -591,11 +953,19 @@ export default function CheckoutPage() {
                             selectedAddressId ===
                             address.id
                           }
-                          onSelect={() =>
+                          onSelect={() => {
                             setSelectedAddressId(
                               address.id
-                            )
-                          }
+                            );
+
+                            setLocationError(
+                              ""
+                            );
+
+                            setLocationSuccess(
+                              false
+                            );
+                          }}
                         />
                       )
                     )}
@@ -633,41 +1003,90 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-              {(!user ||
-                isGuest ||
-                addresses.length ===
-                  0 ||
-                selectedAddressId ===
-                  MANUAL_ADDRESS) && (
+              {showManualAddress && (
                 <div
                   className={
                     user &&
                     !isGuest &&
                     addresses.length >
                       0
-                      ? "mt-7 border-t border-[var(--brand-border)] pt-2"
-                      : ""
+                      ? "mt-7 border-t border-[var(--brand-border)] pt-5"
+                      : "mt-5"
                   }
                 >
-                  {user &&
-                    !isGuest &&
-                    addresses.length >
-                      0 && (
-                      <div className="mt-4 flex items-center gap-2">
-                        <MapPin
-                          size={16}
-                          className="text-[var(--brand-primary)]"
+                  <button
+                    type="button"
+                    disabled={
+                      locating
+                    }
+                    onClick={() =>
+                      void useCurrentLocation()
+                    }
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-[18px] border border-[var(--brand-border)] bg-[var(--brand-primary-soft)]/20 px-4 py-4 text-left transition hover:border-[var(--brand-primary)] disabled:cursor-wait disabled:opacity-70"
+                  >
+                    <div className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-[var(--brand-primary)]">
+                      {locating ? (
+                        <LoaderCircle
+                          size={18}
+                          className="animate-spin"
                         />
+                      ) : (
+                        <LocateFixed
+                          size={18}
+                        />
+                      )}
+                    </div>
 
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--brand-text-dark)]">
-                          Different address
-                        </p>
-                      </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-[var(--brand-text-dark)]">
+                        {locating
+                          ? "Finding your location..."
+                          : "Use my current location"}
+                      </p>
+
+                      <p className="mt-0.5 text-xs text-[var(--brand-muted)]">
+                        Autofill your delivery address
+                      </p>
+                    </div>
+
+                    {!locating && (
+                      <ArrowRight
+                        size={16}
+                        className="text-[var(--brand-primary)]"
+                      />
                     )}
+                  </button>
+
+                  {locationSuccess && (
+                    <div className="mt-3 flex items-start gap-2 rounded-[14px] bg-green-50 px-4 py-3 text-xs leading-5 text-green-700">
+                      <Check
+                        size={15}
+                        className="mt-0.5 shrink-0"
+                      />
+
+                      <span>
+                        Location found. Please check the address details before continuing.
+                      </span>
+                    </div>
+                  )}
+
+                  {locationError && (
+                    <div
+                      role="alert"
+                      className="mt-3 rounded-[14px] bg-red-50 px-4 py-3 text-xs leading-5 text-red-700"
+                    >
+                      {
+                        locationError
+                      }
+                    </div>
+                  )}
 
                   <ManualAddressFields
-                    details={
-                      details
+                    address={
+                      manualAddress
+                    }
+                    onChange={
+                      updateManualAddress
                     }
                   />
                 </div>
@@ -686,9 +1105,24 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+              {saveAddressError && (
+                <p
+                  role="alert"
+                  className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                  {
+                    saveAddressError
+                  }
+                </p>
+              )}
+
               <div className="mt-6 flex justify-end">
                 <Button
                   type="submit"
+                  disabled={
+                    savingAddress ||
+                    locating
+                  }
                   size="md"
                   iconRight={
                     <ArrowRight
@@ -697,7 +1131,11 @@ export default function CheckoutPage() {
                   }
                   className="min-h-11 px-6"
                 >
-                  Continue to payment
+                  {savingAddress
+                    ? "Saving address..."
+                    : locating
+                      ? "Finding location..."
+                      : "Continue to payment"}
                 </Button>
               </div>
             </section>
@@ -902,37 +1340,54 @@ function SavedAddressCard({
 }
 
 function ManualAddressFields({
-  details,
+  address,
+  onChange,
 }: {
-  details: {
-    emirate: string;
-    area: string;
-    addressLine: string;
-    building: string;
-    apartment: string;
-    notes: string;
-  };
+  address: ManualAddress;
+
+  onChange: <
+    K extends keyof ManualAddress,
+  >(
+    key: K,
+    value: ManualAddress[K]
+  ) => void;
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="mt-2 grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <Field
+        <ControlledField
           label="Address"
           name="addressLine"
           autoComplete="street-address"
           maxLength={200}
-          defaultValue={
-            details.addressLine
+          value={
+            address.addressLine
+          }
+          onChange={(
+            value
+          ) =>
+            onChange(
+              "addressLine",
+              value
+            )
           }
         />
       </div>
 
-      <Field
+      <ControlledField
         label="Area"
         name="area"
         maxLength={100}
-        defaultValue={
-          details.area
+        value={
+          address.area
+        }
+        onChange={(
+          value
+        ) =>
+          onChange(
+            "area",
+            value
+          )
         }
       />
 
@@ -943,8 +1398,17 @@ function ManualAddressFields({
           <select
             name="emirate"
             required
-            defaultValue={
-              details.emirate
+            value={
+              address.emirate
+            }
+            onChange={(
+              event
+            ) =>
+              onChange(
+                "emirate",
+                event.target
+                  .value
+              )
             }
             className="mt-2 min-h-11 w-full cursor-pointer rounded-xl border border-[var(--brand-border)] bg-[var(--brand-background)] px-3.5 text-base font-normal normal-case tracking-normal outline-none transition focus:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20"
           >
@@ -975,23 +1439,39 @@ function ManualAddressFields({
         </label>
       </div>
 
-      <Field
+      <ControlledField
         label="Building / Villa"
         name="building"
         maxLength={100}
         required={false}
-        defaultValue={
-          details.building
+        value={
+          address.building
+        }
+        onChange={(
+          value
+        ) =>
+          onChange(
+            "building",
+            value
+          )
         }
       />
 
-      <Field
+      <ControlledField
         label="Apartment / Unit"
         name="apartment"
         maxLength={50}
         required={false}
-        defaultValue={
-          details.apartment
+        value={
+          address.apartment
+        }
+        onChange={(
+          value
+        ) =>
+          onChange(
+            "apartment",
+            value
+          )
         }
       />
 
@@ -1003,8 +1483,17 @@ function ManualAddressFields({
             name="notes"
             rows={3}
             maxLength={500}
-            defaultValue={
-              details.notes
+            value={
+              address.notes
+            }
+            onChange={(
+              event
+            ) =>
+              onChange(
+                "notes",
+                event.target
+                  .value
+              )
             }
             className="mt-2 w-full resize-none rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-sm font-normal normal-case tracking-normal outline-none transition focus:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20"
             placeholder="Preferred delivery instructions"
@@ -1012,6 +1501,56 @@ function ManualAddressFields({
         </label>
       </div>
     </div>
+  );
+}
+
+function ControlledField({
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+  required = true,
+  ...props
+}: Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "value" | "onChange"
+> & {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (
+    value: string
+  ) => void;
+}) {
+  return (
+    <label className="mt-4 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand-text-dark)]">
+      {label}
+
+      <input
+        {...props}
+        required={
+          required
+        }
+        name={
+          name
+        }
+        type={
+          type
+        }
+        value={
+          value
+        }
+        onChange={(
+          event
+        ) =>
+          onChange(
+            event.target.value
+          )
+        }
+        className="mt-2 min-h-11 w-full rounded-xl border border-[var(--brand-border)] bg-[var(--brand-background)] px-3.5 text-base font-normal normal-case tracking-normal outline-none transition focus:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20"
+      />
+    </label>
   );
 }
 

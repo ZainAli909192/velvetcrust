@@ -38,14 +38,26 @@ const ORDER_RATE_LIMIT =
 const ORDER_RATE_WINDOW =
   15 * 60 * 1000;
 
+type OrderResponse = {
+  id: string;
+  orderNumber: string;
+  checkoutType?: string;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  status: string;
+  createdAt: Date;
+  guestAccessToken?: string;
+};
+
 type CreateOrderResult =
   | {
       success: true;
       duplicate: boolean;
       status: number;
-      order: ReturnType<
-        typeof orderResponse
-      >;
+      order: OrderResponse;
     }
   | {
       success: false;
@@ -70,6 +82,21 @@ function createOrderNumber() {
   return `VC-${date}-${random}`;
 }
 
+function createGuestAccessToken() {
+  return crypto
+    .randomBytes(32)
+    .toString("base64url");
+}
+
+function hashGuestAccessToken(
+  token: string
+) {
+  return crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+}
+
 function orderResponse(
   order: {
     _id: {
@@ -85,8 +112,10 @@ function orderResponse(
     paymentStatus: string;
     status: string;
     createdAt: Date;
-  }
-) {
+  },
+
+  guestAccessToken?: string
+): OrderResponse {
   return {
     id:
       order._id.toString(),
@@ -117,6 +146,12 @@ function orderResponse(
 
     createdAt:
       order.createdAt,
+
+    ...(guestAccessToken
+      ? {
+          guestAccessToken,
+        }
+      : {}),
   };
 }
 
@@ -360,6 +395,25 @@ export async function createOrder({
     subtotal +
     deliveryFee;
 
+  let guestAccessToken:
+    string | undefined;
+
+  let guestAccessTokenHash:
+    string | null = null;
+
+  if (
+    checkoutType ===
+    "guest"
+  ) {
+    guestAccessToken =
+      createGuestAccessToken();
+
+    guestAccessTokenHash =
+      hashGuestAccessToken(
+        guestAccessToken
+      );
+  }
+
   let order;
 
   try {
@@ -377,6 +431,8 @@ export async function createOrder({
 
         idempotencyScope,
         idempotencyKey,
+
+        guestAccessTokenHash,
 
         customerDetails,
 
@@ -468,7 +524,11 @@ export async function createOrder({
 
       items:
         order.items.map(
-          (item: import("@/models/Order").OrderItem) => ({
+          (
+            item: import(
+              "@/models/Order"
+            ).OrderItem
+          ) => ({
             name:
               item.name,
 
@@ -515,7 +575,8 @@ export async function createOrder({
 
     order:
       orderResponse(
-        order
+        order,
+        guestAccessToken
       ),
   };
 }

@@ -31,6 +31,8 @@ export type CreateOrderBody = {
 
 export type PaymentMethod =
   | "card"
+  | "apple_pay"
+  | "google_pay"
   | "tabby"
   | "tamara";
 
@@ -76,6 +78,8 @@ const MAX_QUANTITY = 20;
 const PAYMENT_METHODS:
   PaymentMethod[] = [
     "card",
+    "apple_pay",
+    "google_pay",
     "tabby",
     "tamara",
   ];

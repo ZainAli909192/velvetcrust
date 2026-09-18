@@ -1,12 +1,11 @@
 "use client";
 
-import Image from "next/image";
+import axios from "axios";
 import Link from "next/link";
+
 import {
   useSearchParams,
 } from "next/navigation";
-
-import axios from "axios";
 
 import {
   type FormEvent,
@@ -16,13 +15,17 @@ import {
 
 import {
   ArrowLeft,
-  Check,
-  CheckCircle2,
-  CreditCard,
   LockKeyhole,
   ShieldCheck,
-  ShoppingBag,
 } from "lucide-react";
+
+import {
+  Elements,
+} from "@stripe/react-stripe-js";
+
+import {
+  loadStripe,
+} from "@stripe/stripe-js";
 
 import {
   useCart,
@@ -39,14 +42,36 @@ import {
 import Button from "@/components/ui/button";
 import AuthPanel from "@/components/order/auth-panel";
 
-type PaymentMethod =
-  | "card"
-  | "tabby"
-  | "tamara";
+import PaymentMethods, {
+  getPaymentMethodName,
+  type PaymentMethod,
+} from "@/components/checkout/payment/payment-methods";
+
+import OrderSummary from "@/components/checkout/payment/order-summary";
+
+import PaymentSuccess from "@/components/checkout/payment/payment-success";
+
+import StripePaymentForm from "@/components/checkout/payment/stripe-payment-form";
+
+import {
+  EmptyCartState,
+  MissingDeliveryState,
+} from "@/components/checkout/payment/payment-state";
+
+const publishableKey =
+  process.env
+    .NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
+const stripePromise =
+  publishableKey
+    ? loadStripe(
+        publishableKey
+      )
+    : null;
 
 type CreateOrderResponse = {
   success: boolean;
-  message: string;
+  message?: string;
   duplicate?: boolean;
 
   order: {
@@ -68,49 +93,43 @@ type CreateOrderResponse = {
     paymentStatus: string;
     status: string;
     createdAt: string;
+
+    guestAccessToken?: string;
   };
 };
 
-const paymentMethods: Array<{
-  id: PaymentMethod;
-  name: string;
-  description: string;
-  mark: string;
-}> = [
-  {
-    id: "card",
+type CreateIntentResponse = {
+  success: boolean;
+  message?: string;
 
-    name:
-      "Credit or debit card",
+  clientSecret?: string;
+  paymentIntentId?: string;
+};
 
-    description:
-      "Visa, Mastercard and other major cards.",
+type StripePaymentMethod =
+  | "card"
+  | "apple_pay"
+  | "google_pay";
 
-    mark: "CARD",
-  },
+type PreparedPayment = {
+  orderId: string;
+  orderNumber: string;
 
-  {
-    id: "tabby",
+  paymentMethod:
+    StripePaymentMethod;
 
-    name: "Tabby",
+  clientSecret: string;
+};
 
-    description:
-      "Split your purchase into interest-free payments.",
-
-    mark: "tabby",
-  },
-
-  {
-    id: "tamara",
-
-    name: "Tamara",
-
-    description:
-      "Buy now and split your payment with Tamara.",
-
-    mark: "tamara",
-  },
-];
+function isStripeMethod(
+  method: PaymentMethod
+): method is StripePaymentMethod {
+  return (
+    method === "card" ||
+    method === "apple_pay" ||
+    method === "google_pay"
+  );
+}
 
 export default function PaymentPage() {
   const {
@@ -150,22 +169,34 @@ export default function PaymentPage() {
   const [
     completed,
     setCompleted,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     isPlacingOrder,
     setIsPlacingOrder,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     orderNumber,
     setOrderNumber,
-  ] = useState("");
+  ] =
+    useState("");
 
   const [
     orderError,
     setOrderError,
-  ] = useState("");
+  ] =
+    useState("");
+
+  const [
+    preparedPayment,
+    setPreparedPayment,
+  ] =
+    useState<PreparedPayment | null>(
+      null
+    );
 
   const idempotencyKeyRef =
     useRef<string | null>(
@@ -188,13 +219,137 @@ export default function PaymentPage() {
     return key;
   }
 
+  function handleMethodChange(
+    nextMethod: PaymentMethod
+  ) {
+    if (
+      preparedPayment ||
+      isPlacingOrder
+    ) {
+      return;
+    }
+
+    setMethod(
+      nextMethod
+    );
+
+    setOrderError("");
+  }
+
+  async function createOrder() {
+    const response =
+      await axios.post<CreateOrderResponse>(
+        "/api/orders",
+        {
+          items:
+            items.map(
+              (item) => ({
+                productId:
+                  item.id,
+
+                quantity:
+                  item.quantity,
+              })
+            ),
+
+          customerDetails: {
+            fullName:
+              details.fullName,
+
+            email:
+              details.email,
+
+            phone:
+              details.phone,
+          },
+
+          deliveryAddress: {
+            emirate:
+              details.emirate,
+
+            area:
+              details.area,
+
+            addressLine:
+              details.addressLine,
+
+            building:
+              details.building,
+
+            apartment:
+              details.apartment,
+
+            notes:
+              details.notes,
+          },
+
+          paymentMethod:
+            method,
+        },
+        {
+          headers: {
+            "Idempotency-Key":
+              getIdempotencyKey(),
+          },
+        }
+      );
+
+    if (
+      !response.data.success ||
+      !response.data.order
+    ) {
+      throw new Error(
+        response.data.message ||
+          "Unable to create order."
+      );
+    }
+
+    return response.data.order;
+  }
+
+  async function createStripeIntent(
+    order:
+      CreateOrderResponse["order"]
+  ) {
+    const response =
+      await axios.post<CreateIntentResponse>(
+        "/api/payments/stripe/create-intent",
+        {
+          orderId:
+            order.id,
+
+          ...(order.checkoutType ===
+            "guest"
+            ? {
+                guestAccessToken:
+                  order.guestAccessToken,
+              }
+            : {}),
+        }
+      );
+
+    if (
+      !response.data.success ||
+      !response.data.clientSecret
+    ) {
+      throw new Error(
+        response.data.message ||
+          "Unable to initialize payment."
+      );
+    }
+
+    return response.data.clientSecret;
+  }
+
   async function placeOrder(
-    event: FormEvent<HTMLFormElement>
+    event:
+      FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
     if (
-      isPlacingOrder
+      isPlacingOrder ||
+      preparedPayment
     ) {
       return;
     }
@@ -209,92 +364,70 @@ export default function PaymentPage() {
       return;
     }
 
+    if (
+      !isStripeMethod(
+        method
+      )
+    ) {
+      setOrderError(
+        `${getPaymentMethodName(
+          method
+        )} checkout is not connected yet.`
+      );
+
+      return;
+    }
+
+    if (
+      !stripePromise
+    ) {
+      setOrderError(
+        "Stripe is not configured. Please add your Stripe publishable key."
+      );
+
+      return;
+    }
+
     setOrderError("");
     setIsPlacingOrder(
       true
     );
 
     try {
-      const response =
-        await axios.post<CreateOrderResponse>(
-          "/api/orders",
-
-          {
-            items:
-              items.map(
-                (item) => ({
-                  productId:
-                    item.id,
-
-                  quantity:
-                    item.quantity,
-                })
-              ),
-
-            customerDetails: {
-              fullName:
-                details.fullName,
-
-              email:
-                details.email,
-
-              phone:
-                details.phone,
-            },
-
-            deliveryAddress: {
-              emirate:
-                details.emirate,
-
-              area:
-                details.area,
-
-              addressLine:
-                details.addressLine,
-
-              building:
-                details.building,
-
-              apartment:
-                details.apartment,
-
-              notes:
-                details.notes,
-            },
-
-            paymentMethod:
-              method,
-          },
-
-          {
-            headers: {
-              "Idempotency-Key":
-                getIdempotencyKey(),
-            },
-          }
-        );
+      const order =
+        await createOrder();
 
       if (
-        !response.data.success ||
-        !response.data.order
+        order.checkoutType ===
+          "guest" &&
+        !order.guestAccessToken
       ) {
         throw new Error(
-          response.data.message ||
-            "Unable to place order."
+          "Unable to authorize guest payment. Please restart checkout."
         );
       }
 
+      const clientSecret =
+        await createStripeIntent(
+          order
+        );
+
       setOrderNumber(
-        response.data.order
-          .orderNumber
+        order.orderNumber
       );
 
-      clearCart();
-      clearCheckout();
+      setPreparedPayment({
+        orderId:
+          order.id,
 
-      setCompleted(
-        true
-      );
+        orderNumber:
+          order.orderNumber,
+
+        paymentMethod:
+          method,
+
+        clientSecret,
+      });
 
       window.scrollTo({
         top: 0,
@@ -316,7 +449,7 @@ export default function PaymentPage() {
 
         setOrderError(
           data?.message ||
-            "Unable to place your order. Please try again."
+            "Unable to prepare your payment. Please try again."
         );
       } else if (
         error instanceof Error
@@ -326,7 +459,7 @@ export default function PaymentPage() {
         );
       } else {
         setOrderError(
-          "Unable to place your order. Please try again."
+          "Unable to prepare your payment. Please try again."
         );
       }
     } finally {
@@ -334,6 +467,20 @@ export default function PaymentPage() {
         false
       );
     }
+  }
+
+  function handlePaymentSuccess() {
+    clearCart();
+    clearCheckout();
+
+    setCompleted(
+      true
+    );
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   if (
@@ -358,49 +505,11 @@ export default function PaymentPage() {
 
   if (completed) {
     return (
-      <section className="min-h-[70vh] bg-[var(--brand-background)] px-5 py-16">
-        <div className="mx-auto flex max-w-xl flex-col items-center text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]">
-            <CheckCircle2
-              size={36}
-              strokeWidth={1.6}
-            />
-          </div>
-
-          <p className="mt-6 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--brand-primary)]">
-            Order received
-          </p>
-
-          <h1 className="mt-2 font-serif text-4xl text-[var(--brand-text-dark)] sm:text-5xl">
-            Thank you.
-          </h1>
-
-          {orderNumber && (
-            <div className="mt-5 rounded-2xl bg-[var(--brand-primary-soft)] px-6 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--brand-muted)]">
-                Order number
-              </p>
-
-              <p className="mt-1 font-semibold text-[var(--brand-primary)]">
-                {orderNumber}
-              </p>
-            </div>
-          )}
-
-          <p className="mt-5 max-w-md text-sm leading-7 text-[var(--brand-muted)]">
-            Your Velvet Crust order has been received successfully.
-            We&apos;ll send your order details to your email shortly.
-          </p>
-
-          <Button
-            href="/#cheesecakes"
-            size="lg"
-            className="mt-8"
-          >
-            Continue shopping
-          </Button>
-        </div>
-      </section>
+      <PaymentSuccess
+        orderNumber={
+          orderNumber
+        }
+      />
     );
   }
 
@@ -408,31 +517,7 @@ export default function PaymentPage() {
     items.length === 0
   ) {
     return (
-      <section className="min-h-[70vh] bg-[var(--brand-background)] px-5 py-16">
-        <div className="mx-auto flex max-w-xl flex-col items-center text-center">
-          <ShoppingBag
-            size={40}
-            strokeWidth={1.4}
-            className="text-[var(--brand-primary)]"
-          />
-
-          <h1 className="mt-5 font-serif text-4xl text-[var(--brand-text-dark)]">
-            Your cart is empty.
-          </h1>
-
-          <p className="mt-3 text-sm text-[var(--brand-muted)]">
-            Add an item before choosing a payment method.
-          </p>
-
-          <Button
-            href="/#cheesecakes"
-            size="lg"
-            className="mt-7"
-          >
-            Browse cheesecakes
-          </Button>
-        </div>
-      </section>
+      <EmptyCartState />
     );
   }
 
@@ -446,69 +531,45 @@ export default function PaymentPage() {
         details.addressLine
     );
 
-  if (
-    !hasDeliveryDetails
-  ) {
-    return (
-      <section className="min-h-[70vh] bg-[var(--brand-background)] px-5 py-16">
-        <div className="mx-auto flex max-w-xl flex-col items-center text-center">
-          <ShoppingBag
-            size={40}
-            strokeWidth={1.4}
-            className="text-[var(--brand-primary)]"
-          />
-
-          <h1 className="mt-5 font-serif text-4xl text-[var(--brand-text-dark)]">
-            Delivery details required.
-          </h1>
-
-          <p className="mt-3 max-w-md text-sm leading-6 text-[var(--brand-muted)]">
-            Complete your delivery information before choosing
-            a payment method.
-          </p>
-
-          <Button
-            href={
-              isGuest
-                ? "/checkout?mode=guest"
-                : "/checkout"
-            }
-            size="lg"
-            className="mt-7"
-          >
-            Complete delivery details
-          </Button>
-        </div>
-      </section>
-    );
-  }
-
-  const selectedName =
-    paymentMethods.find(
-      (item) =>
-        item.id === method
-    )?.name ?? "payment";
-
   const backToDetailsHref =
     isGuest
       ? "/checkout?mode=guest"
       : "/checkout";
 
+  if (
+    !hasDeliveryDetails
+  ) {
+    return (
+      <MissingDeliveryState
+        href={
+          backToDetailsHref
+        }
+      />
+    );
+  }
+
+  const selectedName =
+    getPaymentMethodName(
+      method
+    );
+
   return (
     <section className="min-h-screen bg-[var(--brand-background)] px-4 pb-32 pt-8 sm:px-8 lg:px-12 lg:pb-20 lg:pt-12">
       <div className="mx-auto max-w-[1300px]">
-        <Link
-          href={
-            backToDetailsHref
-          }
-          className="inline-flex items-center gap-2 text-sm text-[var(--brand-muted)] transition hover:text-[var(--brand-primary)]"
-        >
-          <ArrowLeft
-            size={16}
-          />
+        {!preparedPayment && (
+          <Link
+            href={
+              backToDetailsHref
+            }
+            className="inline-flex items-center gap-2 text-sm text-[var(--brand-muted)] transition hover:text-[var(--brand-primary)]"
+          >
+            <ArrowLeft
+              size={16}
+            />
 
-          Back to details
-        </Link>
+            Back to details
+          </Link>
+        )}
 
         <div className="mt-7">
           <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--brand-primary)]">
@@ -516,182 +577,130 @@ export default function PaymentPage() {
           </p>
 
           <h1 className="mt-2 font-serif text-4xl text-[var(--brand-text-dark)] sm:text-5xl">
-            Choose how to pay.
+            {preparedPayment
+              ? "Complete your payment."
+              : "Choose how to pay."}
           </h1>
 
           <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--brand-muted)]">
-            Select a payment option to finish your order.
+            {preparedPayment
+              ? `Order ${preparedPayment.orderNumber} is ready for secure payment.`
+              : "Select a payment option to finish your order."}
           </p>
         </div>
 
-        <form
-          onSubmit={
-            placeOrder
-          }
-          className="mt-10 grid gap-8 lg:grid-cols-[1fr_390px] lg:items-start"
-        >
+        <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_390px] lg:items-start">
           <div className="rounded-[28px] border border-[var(--brand-border)] bg-white p-5 sm:p-7">
-            <h2 className="font-serif text-2xl text-[var(--brand-text-dark)]">
-              Payment method
-            </h2>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {paymentMethods.map(
-                (option) => {
-                  const selected =
-                    method ===
-                    option.id;
-
-                  return (
-                    <label
-                      key={
-                        option.id
-                      }
-                      className={`relative flex cursor-pointer items-start gap-4 rounded-[20px] border p-4 transition ${
-                        selected
-                          ? "border-[var(--brand-primary)] bg-[var(--brand-primary-soft)]/40"
-                          : "border-[var(--brand-border)] hover:border-[var(--brand-primary-light)]"
-                      }`}
-                    >
-                      <input
-                        className="sr-only"
-                        type="radio"
-                        name="paymentMethod"
-                        value={
-                          option.id
-                        }
-                        checked={
-                          selected
-                        }
-                        onChange={() =>
-                          setMethod(
-                            option.id
-                          )
-                        }
-                      />
-
-                      <span
-                        className={`flex h-10 min-w-14 items-center justify-center rounded-xl px-2 text-xs font-bold ${
-                          option.id ===
-                          "tabby"
-                            ? "bg-[#3fefc6] text-black"
-                            : option.id ===
-                                "tamara"
-                              ? "bg-[#ffcac8] text-black"
-                              : "bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]"
-                        }`}
-                      >
-                        {option.id ===
-                        "card" ? (
-                          <CreditCard
-                            size={20}
-                          />
-                        ) : (
-                          option.mark
-                        )}
-                      </span>
-
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-[var(--brand-text-dark)]">
-                          {
-                            option.name
-                          }
-                        </span>
-
-                        <span className="mt-1 block text-xs leading-5 text-[var(--brand-muted)]">
-                          {
-                            option.description
-                          }
-                        </span>
-                      </span>
-
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                          selected
-                            ? "border-[var(--brand-primary)] bg-[var(--brand-primary)] text-white"
-                            : "border-[var(--brand-border)]"
-                        }`}
-                      >
-                        {selected && (
-                          <Check
-                            size={12}
-                          />
-                        )}
-                      </span>
-                    </label>
-                  );
+            {!preparedPayment ? (
+              <form
+                onSubmit={
+                  placeOrder
                 }
-              )}
-            </div>
+              >
+                <h2 className="font-serif text-2xl text-[var(--brand-text-dark)]">
+                  Payment method
+                </h2>
 
-            {method ===
-              "card" && (
-              <div className="mt-6 rounded-[22px] border border-[var(--brand-border)] bg-[var(--brand-background)] p-5">
-                <div className="flex items-start gap-3">
+                <div className="mt-6">
+                  <PaymentMethods
+                    value={
+                      method
+                    }
+                    onChange={
+                      handleMethodChange
+                    }
+                  />
+                </div>
+
+                <div className="mt-6 flex items-start gap-3 rounded-2xl bg-[var(--brand-primary-soft)]/40 p-4 text-[var(--brand-muted)]">
                   <ShieldCheck
-                    size={20}
                     className="mt-0.5 shrink-0 text-[var(--brand-primary)]"
+                    size={18}
                   />
 
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--brand-text-dark)]">
-                      Secure card payment
-                    </p>
-
-                    <p className="mt-1 text-xs leading-5 text-[var(--brand-muted)]">
-                      Card fields will be provided by the payment gateway.
-                      Velvet Crust will not store raw card numbers or CVC
-                      details.
-                    </p>
-                  </div>
+                  <p className="text-xs leading-5">
+                    Your order is created as pending first. Payment is processed securely and confirmed server-side.
+                  </p>
                 </div>
-              </div>
+
+                {orderError && (
+                  <div
+                    role="alert"
+                    className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                  >
+                    {orderError}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  fullWidth
+                  disabled={
+                    isPlacingOrder
+                  }
+                  iconLeft={
+                    <LockKeyhole
+                      size={15}
+                    />
+                  }
+                  className="mt-6"
+                >
+                  {isPlacingOrder
+                    ? "Preparing secure payment..."
+                    : `Continue with ${selectedName}`}
+                </Button>
+              </form>
+            ) : (
+              <>
+                {stripePromise ? (
+                  <Elements
+                    stripe={
+                      stripePromise
+                    }
+                    options={{
+                      clientSecret:
+                        preparedPayment.clientSecret,
+
+                      appearance: {
+                        variables: {
+                          borderRadius:
+                            "14px",
+                        },
+                      },
+                    }}
+                  >
+                    <StripePaymentForm
+                      method={
+                        preparedPayment.paymentMethod
+                      }
+                      clientSecret={
+                        preparedPayment.clientSecret
+                      }
+                      orderNumber={
+                        preparedPayment.orderNumber
+                      }
+                      onSuccess={
+                        handlePaymentSuccess
+                      }
+                    />
+                  </Elements>
+                ) : (
+                  <div
+                    role="alert"
+                    className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                  >
+                    Stripe is not configured.
+                  </div>
+                )}
+              </>
             )}
-
-            <div className="mt-6 flex items-start gap-3 rounded-2xl bg-[var(--brand-primary-soft)]/40 p-4 text-[var(--brand-muted)]">
-              <ShieldCheck
-                className="mt-0.5 shrink-0 text-[var(--brand-primary)]"
-                size={18}
-              />
-
-              <p className="text-xs leading-5">
-                Your order will be created securely before payment
-                processing. Payment confirmation will be verified by
-                the selected payment provider.
-              </p>
-            </div>
-
-            {orderError && (
-              <div
-                role="alert"
-                className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-              >
-                {orderError}
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              size="lg"
-              fullWidth
-              disabled={
-                isPlacingOrder
-              }
-              iconLeft={
-                <LockKeyhole
-                  size={15}
-                />
-              }
-              className="mt-6"
-            >
-              {isPlacingOrder
-                ? "Placing order..."
-                : `Place order with ${selectedName}`}
-            </Button>
           </div>
 
           <OrderSummary
-            items={items}
+            items={
+              items
+            }
             subtotal={
               subtotal
             }
@@ -699,124 +708,8 @@ export default function PaymentPage() {
               totalItems
             }
           />
-        </form>
+        </div>
       </div>
     </section>
-  );
-}
-
-function OrderSummary({
-  items,
-  subtotal,
-  totalItems,
-}: {
-  items: ReturnType<
-    typeof useCart
-  >["items"];
-
-  subtotal: number;
-
-  totalItems: number;
-}) {
-  return (
-    <aside className="rounded-[28px] border border-[var(--brand-border)] bg-white p-6 lg:sticky lg:top-[120px]">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--brand-primary)]">
-        Order summary ·{" "}
-        {totalItems}{" "}
-        {totalItems === 1
-          ? "item"
-          : "items"}
-      </p>
-
-      <div className="mt-5 max-h-[330px] space-y-4 overflow-auto pr-1">
-        {items.map(
-          (item) => (
-            <div
-              key={
-                item.id
-              }
-              className="flex gap-3 border-b border-[var(--brand-border)] pb-4 last:border-0"
-            >
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-[var(--brand-primary-soft)]">
-                <Image
-                  src={
-                    item.image
-                  }
-                  alt={
-                    item.name
-                  }
-                  fill
-                  className="object-contain p-1"
-                  sizes="64px"
-                />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-serif text-base text-[var(--brand-text-dark)]">
-                  {
-                    item.name
-                  }
-                </p>
-
-                <p className="mt-1 text-xs text-[var(--brand-muted)]">
-                  Qty{" "}
-                  {
-                    item.quantity
-                  }
-                </p>
-              </div>
-
-              <p className="text-sm font-semibold text-[var(--brand-text-dark)]">
-                AED{" "}
-                {(
-                  item.price *
-                  item.quantity
-                ).toFixed(
-                  2
-                )}
-              </p>
-            </div>
-          )
-        )}
-      </div>
-
-      <div className="mt-5 space-y-3 border-t border-[var(--brand-border)] pt-5 text-sm">
-        <div className="flex justify-between">
-          <span className="text-[var(--brand-muted)]">
-            Subtotal
-          </span>
-
-          <span>
-            AED{" "}
-            {subtotal.toFixed(
-              2
-            )}
-          </span>
-        </div>
-
-        <div className="flex justify-between">
-          <span className="text-[var(--brand-muted)]">
-            Delivery
-          </span>
-
-          <span className="text-[var(--brand-muted)]">
-            Confirmed by phone
-          </span>
-        </div>
-
-        <div className="flex justify-between border-t border-[var(--brand-border)] pt-4">
-          <span className="font-serif text-xl">
-            Total
-          </span>
-
-          <span className="text-xl font-bold text-[var(--brand-primary)]">
-            AED{" "}
-            {subtotal.toFixed(
-              2
-            )}
-          </span>
-        </div>
-      </div>
-    </aside>
   );
 }
