@@ -9,7 +9,11 @@ export type RateLimitType =
   | "forgot-password-email"
   | "verify-otp-ip"
   | "order-create-ip"
-  | "order-create-customer";
+  | "order-create-customer"
+  | "order-cancel-ip"
+  | "order-cancel-customer"
+  | "password-change-ip"
+  | "password-change-customer";
 
 export interface IRateLimit
   extends Document {
@@ -40,6 +44,10 @@ const RateLimitSchema =
           "verify-otp-ip",
           "order-create-ip",
           "order-create-customer",
+          "order-cancel-ip",
+          "order-cancel-customer",
+          "password-change-ip",
+          "password-change-customer",
         ],
       },
 

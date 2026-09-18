@@ -1,16 +1,25 @@
 import crypto from "crypto";
-import { cookies } from "next/headers";
 
-import { connectDB } from "@/lib/mongodb";
+import {
+  cookies,
+} from "next/headers";
+
+import {
+  connectDB,
+} from "@/lib/mongodb";
+
 import Customer from "@/models/Customer";
 import Session from "@/models/Session";
 
-const SESSION_COOKIE = "vc_session";
+const SESSION_COOKIE =
+  "vc_session";
 
 const SESSION_DURATION =
   60 * 60 * 24 * 30;
 
-function hashToken(token: string) {
+function hashToken(
+  token: string
+) {
   return crypto
     .createHash("sha256")
     .update(token)
@@ -28,13 +37,18 @@ export async function createSession(
 ) {
   await connectDB();
 
-  const token = generateSessionToken();
-  const tokenHash = hashToken(token);
+  const token =
+    generateSessionToken();
 
-  const expiresAt = new Date(
-    Date.now() +
-      SESSION_DURATION * 1000
-  );
+  const tokenHash =
+    hashToken(token);
+
+  const expiresAt =
+    new Date(
+      Date.now() +
+        SESSION_DURATION *
+          1000
+    );
 
   await Session.create({
     customerId,
@@ -42,7 +56,8 @@ export async function createSession(
     expiresAt,
   });
 
-  const cookieStore = await cookies();
+  const cookieStore =
+    await cookies();
 
   cookieStore.set(
     SESSION_COOKIE,
@@ -51,20 +66,23 @@ export async function createSession(
       httpOnly: true,
 
       secure:
-        process.env.NODE_ENV ===
+        process.env
+          .NODE_ENV ===
         "production",
 
       sameSite: "lax",
 
       path: "/",
 
-      maxAge: SESSION_DURATION,
+      maxAge:
+        SESSION_DURATION,
     }
   );
 }
 
 export async function getCurrentCustomer() {
-  const cookieStore = await cookies();
+  const cookieStore =
+    await cookies();
 
   const token =
     cookieStore.get(
@@ -77,7 +95,8 @@ export async function getCurrentCustomer() {
 
   await connectDB();
 
-  const tokenHash = hashToken(token);
+  const tokenHash =
+    hashToken(token);
 
   const session =
     await Session.findOne({
@@ -124,7 +143,8 @@ export async function getCurrentCustomer() {
 }
 
 export async function deleteSession() {
-  const cookieStore = await cookies();
+  const cookieStore =
+    await cookies();
 
   const token =
     cookieStore.get(
@@ -135,7 +155,8 @@ export async function deleteSession() {
     await connectDB();
 
     await Session.deleteOne({
-      tokenHash: hashToken(token),
+      tokenHash:
+        hashToken(token),
     });
   }
 
@@ -146,14 +167,30 @@ export async function deleteSession() {
       httpOnly: true,
 
       secure:
-        process.env.NODE_ENV ===
+        process.env
+          .NODE_ENV ===
         "production",
 
       sameSite: "lax",
 
       path: "/",
 
-      expires: new Date(0),
+      expires:
+        new Date(0),
     }
+  );
+}
+
+export async function rotateCustomerSessions(
+  customerId: string
+) {
+  await connectDB();
+
+  await Session.deleteMany({
+    customerId,
+  });
+
+  await createSession(
+    customerId
   );
 }

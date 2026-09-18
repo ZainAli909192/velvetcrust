@@ -18,8 +18,10 @@ import {
   ArrowRight,
   Clock3,
   LogOut,
+  MapPin,
   PackageCheck,
   ShoppingBag,
+  UserRound,
 } from "lucide-react";
 
 import {
@@ -113,6 +115,7 @@ export default function AccountPage({
       async () => {
         if (!user) {
           setOrders([]);
+
           setOrdersLoading(
             false
           );
@@ -302,9 +305,9 @@ export default function AccountPage({
 
             <p className="mt-2 max-w-[500px] text-sm leading-6 text-[var(--brand-muted)]">
               Manage your
-              orders and
-              continue where
-              you left off.
+              orders, profile
+              and delivery
+              addresses.
             </p>
           </div>
 
@@ -366,6 +369,61 @@ export default function AccountPage({
             )
           )}
         </motion.div>
+
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 25,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            duration: 0.55,
+          }}
+          className="mt-10"
+        >
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--brand-primary)] sm:text-[11px]">
+              Manage account
+            </p>
+
+            <h2 className="mt-1 font-serif text-2xl text-[var(--brand-text-dark)] sm:text-3xl">
+              Account settings
+            </h2>
+          </div>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <AccountLink
+              href="/account/profile"
+              icon={
+                <UserRound
+                  size={20}
+                  strokeWidth={
+                    1.7
+                  }
+                />
+              }
+              title="Profile"
+              description="Manage your name, phone and account details."
+            />
+
+            <AccountLink
+              href="/account/addresses"
+              icon={
+                <MapPin
+                  size={20}
+                  strokeWidth={
+                    1.7
+                  }
+                />
+              }
+              title="Addresses"
+              description="Add and manage your saved delivery addresses."
+            />
+          </div>
+        </motion.section>
 
         <motion.section
           initial={{
@@ -492,6 +550,48 @@ function Metric({
         {value}
       </p>
     </motion.div>
+  );
+}
+
+function AccountLink({
+  href,
+  icon,
+  title,
+  description,
+}: {
+  href: string;
+
+  icon:
+    React.ReactNode;
+
+  title: string;
+
+  description: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-4 rounded-[22px] border border-[var(--brand-border)] bg-white p-5 shadow-[0_10px_30px_rgba(81,0,0,0.025)] transition duration-300 hover:-translate-y-0.5 hover:border-[var(--brand-primary)]"
+    >
+      <div className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]">
+        {icon}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="font-serif text-xl text-[var(--brand-text-dark)]">
+          {title}
+        </p>
+
+        <p className="mt-1 text-xs leading-5 text-[var(--brand-muted)]">
+          {description}
+        </p>
+      </div>
+
+      <ArrowRight
+        size={16}
+        className="shrink-0 text-[var(--brand-primary)] transition-transform duration-300 group-hover:translate-x-1"
+      />
+    </Link>
   );
 }
 
@@ -728,7 +828,9 @@ function EmptyOrders() {
       <div className="mx-auto grid size-12 place-items-center rounded-full bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]">
         <ShoppingBag
           size={21}
-          strokeWidth={1.7}
+          strokeWidth={
+            1.7
+          }
         />
       </div>
 

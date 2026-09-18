@@ -1,18 +1,27 @@
 "use client";
 
+import axios from "axios";
 import Image from "next/image";
 import Link from "next/link";
+
 import {
   useRouter,
   useSearchParams,
 } from "next/navigation";
+
 import {
   type FormEvent,
   type InputHTMLAttributes,
+  useEffect,
+  useState,
 } from "react";
+
 import {
   ArrowLeft,
   ArrowRight,
+  Check,
+  MapPin,
+  Plus,
   ShoppingBag,
 } from "lucide-react";
 
@@ -22,9 +31,11 @@ import AuthPanel from "@/components/order/auth-panel";
 import {
   useCart,
 } from "@/components/store/cart-context";
+
 import {
   useAuth,
 } from "@/components/store/auth-context";
+
 import {
   useCheckout,
 } from "@/components/store/checkout-context";
@@ -38,6 +49,26 @@ const emirates = [
   "Ras Al Khaimah",
   "Fujairah",
 ];
+
+type SavedAddress = {
+  id: string;
+  label: string;
+  emirate: string;
+  area: string;
+  addressLine: string;
+  building?: string;
+  apartment?: string;
+  notes?: string;
+  isDefault: boolean;
+};
+
+type AddressesResponse = {
+  success: boolean;
+  addresses: SavedAddress[];
+};
+
+const MANUAL_ADDRESS =
+  "manual";
 
 export default function CheckoutPage() {
   const {
@@ -68,6 +99,159 @@ export default function CheckoutPage() {
       "mode"
     ) === "guest";
 
+  const [
+    addresses,
+    setAddresses,
+  ] =
+    useState<
+      SavedAddress[]
+    >([]);
+
+  const [
+    addressesLoading,
+    setAddressesLoading,
+  ] = useState(false);
+
+  const [
+    addressesError,
+    setAddressesError,
+  ] = useState("");
+
+  const [
+    selectedAddressId,
+    setSelectedAddressId,
+  ] =
+    useState<string>(
+      MANUAL_ADDRESS
+    );
+
+  const [
+    addressesReady,
+    setAddressesReady,
+  ] = useState(false);
+
+  useEffect(() => {
+    if (
+      !isReady ||
+      !user ||
+      isGuest
+    ) {
+      setAddresses([]);
+      setSelectedAddressId(
+        MANUAL_ADDRESS
+      );
+      setAddressesReady(
+        true
+      );
+
+      return;
+    }
+
+    let active = true;
+
+    async function loadAddresses() {
+      setAddressesLoading(
+        true
+      );
+
+      setAddressesError("");
+
+      try {
+        const response =
+          await axios.get<AddressesResponse>(
+            "/api/account/addresses"
+          );
+
+        if (!active) {
+          return;
+        }
+
+        const savedAddresses =
+          response.data
+            .addresses ?? [];
+
+        setAddresses(
+          savedAddresses
+        );
+
+        if (
+          savedAddresses.length ===
+          0
+        ) {
+          setSelectedAddressId(
+            MANUAL_ADDRESS
+          );
+
+          return;
+        }
+
+        const defaultAddress =
+          savedAddresses.find(
+            (address) =>
+              address.isDefault
+          );
+
+        setSelectedAddressId(
+          defaultAddress?.id ??
+            savedAddresses[0].id
+        );
+      } catch (error) {
+        console.error(
+          "Load checkout addresses error:",
+          error
+        );
+
+        if (!active) {
+          return;
+        }
+
+        setAddresses([]);
+
+        setSelectedAddressId(
+          MANUAL_ADDRESS
+        );
+
+        setAddressesError(
+          "Saved addresses could not be loaded. You can enter an address manually."
+        );
+      } finally {
+        if (active) {
+          setAddressesLoading(
+            false
+          );
+
+          setAddressesReady(
+            true
+          );
+        }
+      }
+    }
+
+    void loadAddresses();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    isReady,
+    user,
+    isGuest,
+  ]);
+
+  const selectedAddress =
+    addresses.find(
+      (address) =>
+        address.id ===
+        selectedAddressId
+    );
+
+  const usingSavedAddress =
+    Boolean(
+      user &&
+        !isGuest &&
+        selectedAddress
+    );
+
   function continueToPayment(
     event: FormEvent<HTMLFormElement>
   ) {
@@ -78,70 +262,106 @@ export default function CheckoutPage() {
         event.currentTarget
       );
 
-    saveDetails({
-      fullName:
-        String(
-          formData.get(
-            "fullName"
-          ) ?? ""
-        ).trim(),
+    const fullName =
+      String(
+        formData.get(
+          "fullName"
+        ) ?? ""
+      ).trim();
 
-      email:
-        String(
-          formData.get(
-            "email"
-          ) ?? ""
-        ).trim(),
+    const email =
+      String(
+        formData.get(
+          "email"
+        ) ?? ""
+      ).trim();
 
-      phone:
-        String(
-          formData.get(
-            "phone"
-          ) ?? ""
-        ).trim(),
+    const phone =
+      String(
+        formData.get(
+          "phone"
+        ) ?? ""
+      ).trim();
 
-      emirate:
-        String(
-          formData.get(
-            "emirate"
-          ) ?? ""
-        ).trim(),
+    if (
+      usingSavedAddress &&
+      selectedAddress
+    ) {
+      saveDetails({
+        fullName,
+        email,
+        phone,
 
-      area:
-        String(
-          formData.get(
-            "area"
-          ) ?? ""
-        ).trim(),
+        emirate:
+          selectedAddress.emirate,
 
-      addressLine:
-        String(
-          formData.get(
-            "addressLine"
-          ) ?? ""
-        ).trim(),
+        area:
+          selectedAddress.area,
 
-      building:
-        String(
-          formData.get(
-            "building"
-          ) ?? ""
-        ).trim(),
+        addressLine:
+          selectedAddress.addressLine,
 
-      apartment:
-        String(
-          formData.get(
-            "apartment"
-          ) ?? ""
-        ).trim(),
+        building:
+          selectedAddress.building ??
+          "",
 
-      notes:
-        String(
-          formData.get(
-            "notes"
-          ) ?? ""
-        ).trim(),
-    });
+        apartment:
+          selectedAddress.apartment ??
+          "",
+
+        notes:
+          selectedAddress.notes ??
+          "",
+      });
+    } else {
+      saveDetails({
+        fullName,
+        email,
+        phone,
+
+        emirate:
+          String(
+            formData.get(
+              "emirate"
+            ) ?? ""
+          ).trim(),
+
+        area:
+          String(
+            formData.get(
+              "area"
+            ) ?? ""
+          ).trim(),
+
+        addressLine:
+          String(
+            formData.get(
+              "addressLine"
+            ) ?? ""
+          ).trim(),
+
+        building:
+          String(
+            formData.get(
+              "building"
+            ) ?? ""
+          ).trim(),
+
+        apartment:
+          String(
+            formData.get(
+              "apartment"
+            ) ?? ""
+          ).trim(),
+
+        notes:
+          String(
+            formData.get(
+              "notes"
+            ) ?? ""
+          ).trim(),
+      });
+    }
 
     router.push(
       isGuest
@@ -152,7 +372,10 @@ export default function CheckoutPage() {
 
   if (
     !isReady ||
-    !isCheckoutReady
+    !isCheckoutReady ||
+    (user &&
+      !isGuest &&
+      !addressesReady)
   ) {
     return (
       <div className="min-h-[70vh] bg-[var(--brand-background)]" />
@@ -278,7 +501,9 @@ export default function CheckoutPage() {
                   autoComplete="tel"
                   maxLength={30}
                   defaultValue={
-                    details.phone
+                    details.phone ||
+                    user?.phone ||
+                    ""
                   }
                 />
 
@@ -300,110 +525,166 @@ export default function CheckoutPage() {
 
               <div className="my-7 border-t border-[var(--brand-border)]" />
 
-              <h2 className="font-serif text-2xl text-[var(--brand-text-dark)]">
-                Delivery address
-              </h2>
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <h2 className="font-serif text-2xl text-[var(--brand-text-dark)]">
+                    Delivery address
+                  </h2>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <Field
-                    label="Address"
-                    name="addressLine"
-                    autoComplete="street-address"
-                    maxLength={200}
-                    defaultValue={
-                      details.addressLine
+                  {user &&
+                    !isGuest &&
+                    addresses.length >
+                      0 && (
+                      <p className="mt-1 text-xs text-[var(--brand-muted)]">
+                        Choose a saved address or enter a different one.
+                      </p>
+                    )}
+                </div>
+
+                {user &&
+                  !isGuest && (
+                    <Link
+                      href="/account/addresses"
+                      className="shrink-0 text-xs font-semibold text-[var(--brand-primary)] transition hover:opacity-70"
+                    >
+                      Manage addresses
+                    </Link>
+                  )}
+              </div>
+
+              {addressesError && (
+                <div className="mt-5 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+                  {
+                    addressesError
+                  }
+                </div>
+              )}
+
+              {user &&
+                !isGuest &&
+                addressesLoading && (
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <AddressSkeleton />
+
+                    <AddressSkeleton />
+                  </div>
+                )}
+
+              {user &&
+                !isGuest &&
+                !addressesLoading &&
+                addresses.length >
+                  0 && (
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {addresses.map(
+                      (
+                        address
+                      ) => (
+                        <SavedAddressCard
+                          key={
+                            address.id
+                          }
+                          address={
+                            address
+                          }
+                          selected={
+                            selectedAddressId ===
+                            address.id
+                          }
+                          onSelect={() =>
+                            setSelectedAddressId(
+                              address.id
+                            )
+                          }
+                        />
+                      )
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedAddressId(
+                          MANUAL_ADDRESS
+                        )
+                      }
+                      className={`group flex min-h-[132px] cursor-pointer items-center gap-4 rounded-[20px] border p-4 text-left transition ${
+                        selectedAddressId ===
+                        MANUAL_ADDRESS
+                          ? "border-[var(--brand-primary)] bg-[var(--brand-primary-soft)]/35"
+                          : "border-[var(--brand-border)] bg-white hover:border-[var(--brand-primary)]/50"
+                      }`}
+                    >
+                      <div className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--brand-primary-soft)] text-[var(--brand-primary)]">
+                        <Plus
+                          size={18}
+                        />
+                      </div>
+
+                      <div>
+                        <p className="font-serif text-lg text-[var(--brand-text-dark)]">
+                          Use a different address
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-[var(--brand-muted)]">
+                          Enter delivery details for this order.
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                )}
+
+              {(!user ||
+                isGuest ||
+                addresses.length ===
+                  0 ||
+                selectedAddressId ===
+                  MANUAL_ADDRESS) && (
+                <div
+                  className={
+                    user &&
+                    !isGuest &&
+                    addresses.length >
+                      0
+                      ? "mt-7 border-t border-[var(--brand-border)] pt-2"
+                      : ""
+                  }
+                >
+                  {user &&
+                    !isGuest &&
+                    addresses.length >
+                      0 && (
+                      <div className="mt-4 flex items-center gap-2">
+                        <MapPin
+                          size={16}
+                          className="text-[var(--brand-primary)]"
+                        />
+
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--brand-text-dark)]">
+                          Different address
+                        </p>
+                      </div>
+                    )}
+
+                  <ManualAddressFields
+                    details={
+                      details
                     }
                   />
                 </div>
+              )}
 
-                <Field
-                  label="Area"
-                  name="area"
-                  maxLength={100}
-                  defaultValue={
-                    details.area
-                  }
-                />
+              {usingSavedAddress &&
+                selectedAddress && (
+                  <div className="mt-5 rounded-2xl bg-[var(--brand-primary-soft)]/30 px-4 py-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[var(--brand-primary)]">
+                      <Check
+                        size={15}
+                      />
 
-                <div className="mt-4">
-                  <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand-text-dark)]">
-                    Emirate
-
-                    <select
-                      name="emirate"
-                      required
-                      defaultValue={
-                        details.emirate
-                      }
-                      className="mt-2 min-h-11 w-full cursor-pointer rounded-xl border border-[var(--brand-border)] bg-[var(--brand-background)] px-3.5 text-base font-normal normal-case tracking-normal outline-none transition focus:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20"
-                    >
-                      <option
-                        value=""
-                        disabled
-                      >
-                        Select emirate
-                      </option>
-
-                      {emirates.map(
-                        (
-                          emirate
-                        ) => (
-                          <option
-                            key={
-                              emirate
-                            }
-                            value={
-                              emirate
-                            }
-                          >
-                            {
-                              emirate
-                            }
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </label>
-                </div>
-
-                <Field
-                  label="Building / Villa"
-                  name="building"
-                  maxLength={100}
-                  required={false}
-                  defaultValue={
-                    details.building
-                  }
-                />
-
-                <Field
-                  label="Apartment / Unit"
-                  name="apartment"
-                  maxLength={50}
-                  required={false}
-                  defaultValue={
-                    details.apartment
-                  }
-                />
-
-                <div className="sm:col-span-2">
-                  <label className="mt-4 block text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--brand-text-dark)]">
-                    Delivery notes (optional)
-
-                    <textarea
-                      name="notes"
-                      rows={3}
-                      maxLength={500}
-                      defaultValue={
-                        details.notes
-                      }
-                      className="mt-2 w-full resize-none rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-sm font-normal normal-case tracking-normal outline-none transition focus:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20"
-                      placeholder="Preferred delivery instructions"
-                    />
-                  </label>
-                </div>
-              </div>
+                      This address will be used for this order.
+                    </div>
+                  </div>
+                )}
 
               <div className="mt-6 flex justify-end">
                 <Button
@@ -528,6 +809,223 @@ export default function CheckoutPage() {
         </form>
       </div>
     </section>
+  );
+}
+
+function SavedAddressCard({
+  address,
+  selected,
+  onSelect,
+}: {
+  address: SavedAddress;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const secondary =
+    [
+      address.building,
+      address.apartment,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+  return (
+    <button
+      type="button"
+      onClick={
+        onSelect
+      }
+      className={`relative min-h-[132px] cursor-pointer rounded-[20px] border p-4 text-left transition ${
+        selected
+          ? "border-[var(--brand-primary)] bg-[var(--brand-primary-soft)]/35 shadow-[0_8px_25px_rgba(81,0,0,0.04)]"
+          : "border-[var(--brand-border)] bg-white hover:border-[var(--brand-primary)]/50"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border ${
+            selected
+              ? "border-[var(--brand-primary)] bg-[var(--brand-primary)] text-white"
+              : "border-[var(--brand-border)]"
+          }`}
+        >
+          {selected && (
+            <Check
+              size={12}
+              strokeWidth={3}
+            />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-serif text-lg text-[var(--brand-text-dark)]">
+              {
+                address.label
+              }
+            </p>
+
+            {address.isDefault && (
+              <span className="rounded-full bg-[var(--brand-primary)] px-2 py-1 text-[8px] font-bold uppercase tracking-[0.1em] text-white">
+                Default
+              </span>
+            )}
+          </div>
+
+          <p className="mt-2 text-xs leading-5 text-[var(--brand-text-dark)]">
+            {
+              address.addressLine
+            }
+          </p>
+
+          <p className="text-xs leading-5 text-[var(--brand-muted)]">
+            {
+              address.area
+            }
+            ,{" "}
+            {
+              address.emirate
+            }
+          </p>
+
+          {secondary && (
+            <p className="mt-1 text-[11px] leading-5 text-[var(--brand-muted)]">
+              {
+                secondary
+              }
+            </p>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function ManualAddressFields({
+  details,
+}: {
+  details: {
+    emirate: string;
+    area: string;
+    addressLine: string;
+    building: string;
+    apartment: string;
+    notes: string;
+  };
+}) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <Field
+          label="Address"
+          name="addressLine"
+          autoComplete="street-address"
+          maxLength={200}
+          defaultValue={
+            details.addressLine
+          }
+        />
+      </div>
+
+      <Field
+        label="Area"
+        name="area"
+        maxLength={100}
+        defaultValue={
+          details.area
+        }
+      />
+
+      <div className="mt-4">
+        <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand-text-dark)]">
+          Emirate
+
+          <select
+            name="emirate"
+            required
+            defaultValue={
+              details.emirate
+            }
+            className="mt-2 min-h-11 w-full cursor-pointer rounded-xl border border-[var(--brand-border)] bg-[var(--brand-background)] px-3.5 text-base font-normal normal-case tracking-normal outline-none transition focus:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20"
+          >
+            <option
+              value=""
+              disabled
+            >
+              Select emirate
+            </option>
+
+            {emirates.map(
+              (emirate) => (
+                <option
+                  key={
+                    emirate
+                  }
+                  value={
+                    emirate
+                  }
+                >
+                  {
+                    emirate
+                  }
+                </option>
+              )
+            )}
+          </select>
+        </label>
+      </div>
+
+      <Field
+        label="Building / Villa"
+        name="building"
+        maxLength={100}
+        required={false}
+        defaultValue={
+          details.building
+        }
+      />
+
+      <Field
+        label="Apartment / Unit"
+        name="apartment"
+        maxLength={50}
+        required={false}
+        defaultValue={
+          details.apartment
+        }
+      />
+
+      <div className="sm:col-span-2">
+        <label className="mt-4 block text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--brand-text-dark)]">
+          Delivery notes (optional)
+
+          <textarea
+            name="notes"
+            rows={3}
+            maxLength={500}
+            defaultValue={
+              details.notes
+            }
+            className="mt-2 w-full resize-none rounded-2xl border border-[var(--brand-border)] bg-white px-4 py-3 text-sm font-normal normal-case tracking-normal outline-none transition focus:border-[var(--brand-primary)] focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/20"
+            placeholder="Preferred delivery instructions"
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function AddressSkeleton() {
+  return (
+    <div className="min-h-[132px] animate-pulse rounded-[20px] border border-[var(--brand-border)] p-4">
+      <div className="h-5 w-20 rounded bg-[var(--brand-primary-soft)]" />
+
+      <div className="mt-4 h-3 w-4/5 rounded bg-[var(--brand-primary-soft)]" />
+
+      <div className="mt-2 h-3 w-3/5 rounded bg-[var(--brand-primary-soft)]" />
+
+      <div className="mt-2 h-3 w-2/5 rounded bg-[var(--brand-primary-soft)]" />
+    </div>
   );
 }
 
