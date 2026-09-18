@@ -93,6 +93,10 @@ export default function GoogleLogin({
           "GOOGLE_CLIENT_ID is not configured."
         );
 
+        setError(
+          "Google sign in is unavailable. Please contact support."
+        );
+
         setIsGoogleReady(
           false
         );
@@ -169,7 +173,10 @@ export default function GoogleLogin({
           "pill",
 
         width:
-          240,
+          Math.min(
+            400,
+            googleButtonRef.current.clientWidth || 240
+          ),
       }
     );
   }, [
@@ -181,7 +188,7 @@ export default function GoogleLogin({
       <Script
         src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
-        onLoad={() => {
+        onReady={() => {
           initializeGoogle();
         }}
         onError={() => {
