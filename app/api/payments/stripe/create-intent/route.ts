@@ -37,6 +37,13 @@ function isAllowedOrigin(
     );
 
   if (!origin) {
+    return false;
+  }
+
+  if (
+    origin ===
+    new URL(request.url).origin
+  ) {
     return true;
   }
 
@@ -467,10 +474,43 @@ export async function POST(
             }
           );
         }
+
+        if (
+          !belongsToOrder ||
+          !amountMatches ||
+          !currencyMatches
+        ) {
+          console.error(
+            "Stripe PaymentIntent does not match order:",
+            order._id
+          );
+
+          return NextResponse.json(
+            {
+              success: false,
+              message:
+                "Unable to verify this order's payment. Please contact support.",
+            },
+            {
+              status: 409,
+            }
+          );
+        }
       } catch (error) {
         console.error(
           "Stripe PaymentIntent retrieval error:",
           error
+        );
+
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Unable to verify the existing payment. Please try again shortly.",
+          },
+          {
+            status: 503,
+          }
         );
       }
     }
@@ -485,9 +525,11 @@ export async function POST(
             currency:
               "aed",
 
-            automatic_payment_methods: {
-              enabled: true,
-            },
+            // Apple Pay and Google Pay are card wallets. Do not offer
+            // unrelated redirect methods through the card-only UI.
+            payment_method_types: [
+              "card",
+            ],
 
             receipt_email:
               order
@@ -507,7 +549,7 @@ export async function POST(
           },
           {
             idempotencyKey:
-              `vc-payment-${order._id.toString()}`,
+              `vc-payment-${order._id.toString()}-${order.paymentReference || "initial"}`,
           }
         );
 

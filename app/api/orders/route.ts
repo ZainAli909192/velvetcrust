@@ -30,6 +30,12 @@ function isAllowedOrigin(
   const allowedOrigins =
     new Set<string>();
 
+  // Vercel preview and production deployments can have different hosts.
+  // The request URL is the host this browser actually reached.
+  allowedOrigins.add(
+    request.nextUrl.origin
+  );
+
   const siteUrl =
     process.env.NEXT_SITE_URL;
 

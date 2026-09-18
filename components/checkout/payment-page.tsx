@@ -9,6 +9,7 @@ import {
 
 import {
   type FormEvent,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -158,6 +159,17 @@ export default function PaymentPage() {
       "mode"
     ) === "guest";
 
+  const returnedClientSecret =
+    searchParams.get(
+      "payment_intent_client_secret"
+    );
+
+  const returnedOrderNumber =
+    searchParams.get("order") || "";
+
+  const returnedMethod =
+    searchParams.get("method");
+
   const [
     method,
     setMethod,
@@ -197,6 +209,21 @@ export default function PaymentPage() {
     useState<PreparedPayment | null>(
       null
     );
+
+  const [
+    isRecoveringReturn,
+    setIsRecoveringReturn,
+  ] = useState(
+    Boolean(returnedClientSecret)
+  );
+
+  const [
+    isPaymentProcessing,
+    setIsPaymentProcessing,
+  ] = useState(false);
+
+  const guestAccessTokenRef =
+    useRef<string | null>(null);
 
   const idempotencyKeyRef =
     useRef<string | null>(
@@ -304,7 +331,20 @@ export default function PaymentPage() {
       );
     }
 
-    return response.data.order;
+    const order = response.data.order;
+
+    if (order.guestAccessToken) {
+      guestAccessTokenRef.current =
+        order.guestAccessToken;
+    } else if (
+      order.checkoutType === "guest" &&
+      guestAccessTokenRef.current
+    ) {
+      order.guestAccessToken =
+        guestAccessTokenRef.current;
+    }
+
+    return order;
   }
 
   async function createStripeIntent(
@@ -483,9 +523,116 @@ export default function PaymentPage() {
     });
   }
 
+  useEffect(() => {
+    if (!returnedClientSecret) {
+      return;
+    }
+
+    let active = true;
+
+    async function recoverPayment() {
+      try {
+        const stripe =
+          await stripePromise;
+
+        if (!stripe) {
+          throw new Error(
+            "Stripe is not configured on this deployment."
+          );
+        }
+
+        const { paymentIntent, error } =
+          await stripe.retrievePaymentIntent(
+            returnedClientSecret!
+          );
+
+        if (!active) {
+          return;
+        }
+
+        if (
+          paymentIntent?.status ===
+          "succeeded"
+        ) {
+          setOrderNumber(
+            returnedOrderNumber
+          );
+          clearCart();
+          clearCheckout();
+          setCompleted(true);
+          window.history.replaceState(
+            null,
+            "",
+            "/checkout/payment"
+          );
+        } else if (paymentIntent) {
+          setOrderNumber(
+            returnedOrderNumber
+          );
+          setPreparedPayment({
+            orderId: "",
+            orderNumber:
+              returnedOrderNumber,
+            paymentMethod:
+              returnedMethod ===
+                "apple_pay" ||
+              returnedMethod ===
+                "google_pay"
+                ? returnedMethod
+                : "card",
+            clientSecret:
+              returnedClientSecret!,
+          });
+          setIsPaymentProcessing(
+            paymentIntent.status ===
+              "processing"
+          );
+          if (
+            paymentIntent.status ===
+            "processing"
+          ) {
+            setOrderError(
+              "Your payment is processing. Please wait for confirmation before trying again."
+            );
+          }
+        } else {
+          setOrderError(
+            error?.message ||
+              "Unable to verify your payment. Please contact support before trying again."
+          );
+        }
+      } catch (error) {
+        if (active) {
+          setOrderError(
+            error instanceof Error
+              ? error.message
+              : "Unable to verify your payment. Please contact support before trying again."
+          );
+        }
+      } finally {
+        if (active) {
+          setIsRecoveringReturn(false);
+        }
+      }
+    }
+
+    void recoverPayment();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    returnedClientSecret,
+    returnedOrderNumber,
+    returnedMethod,
+    clearCart,
+    clearCheckout,
+  ]);
+
   if (
     !isReady ||
-    !isCheckoutReady
+    !isCheckoutReady ||
+    isRecoveringReturn
   ) {
     return (
       <div className="min-h-[70vh] bg-[var(--brand-background)]" />
@@ -653,7 +800,15 @@ export default function PaymentPage() {
               </form>
             ) : (
               <>
-                {stripePromise ? (
+                {orderError && (
+                  <div
+                    role="alert"
+                    className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+                  >
+                    {orderError}
+                  </div>
+                )}
+                {isPaymentProcessing ? null : stripePromise ? (
                   <Elements
                     stripe={
                       stripePromise
@@ -679,6 +834,9 @@ export default function PaymentPage() {
                       }
                       orderNumber={
                         preparedPayment.orderNumber
+                      }
+                      isGuest={
+                        isGuest
                       }
                       onSuccess={
                         handlePaymentSuccess

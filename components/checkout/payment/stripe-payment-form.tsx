@@ -32,6 +32,7 @@ export default function StripePaymentForm({
   method,
   clientSecret,
   orderNumber,
+  isGuest,
   onSuccess,
 }: {
   method:
@@ -42,6 +43,9 @@ export default function StripePaymentForm({
 
   orderNumber:
     string;
+
+  isGuest:
+    boolean;
 
   onSuccess:
     () => void;
@@ -72,6 +76,28 @@ export default function StripePaymentForm({
       boolean | null
     >(null);
 
+  function returnUrl() {
+    const url = new URL(
+      "/checkout/payment",
+      window.location.origin
+    );
+    url.searchParams.set(
+      "order",
+      orderNumber
+    );
+    url.searchParams.set(
+      "method",
+      method
+    );
+    if (isGuest) {
+      url.searchParams.set(
+        "mode",
+        "guest"
+      );
+    }
+    return url.toString();
+  }
+
   async function confirmCardPayment() {
     if (
       !stripe ||
@@ -87,6 +113,17 @@ export default function StripePaymentForm({
     );
 
     try {
+      const { error: submitError } =
+        await elements.submit();
+
+      if (submitError) {
+        setErrorMessage(
+          submitError.message ||
+            "Please check your payment details."
+        );
+        return;
+      }
+
       const {
         error,
       } =
@@ -95,7 +132,7 @@ export default function StripePaymentForm({
 
           confirmParams: {
             return_url:
-              `${window.location.origin}/checkout/payment`,
+              returnUrl(),
           },
 
           redirect:
@@ -194,6 +231,20 @@ export default function StripePaymentForm({
     );
 
     try {
+      const { error: submitError } =
+        await elements.submit();
+
+      if (submitError) {
+        event.paymentFailed({
+          reason: "fail",
+        });
+        setErrorMessage(
+          submitError.message ||
+            "Please check your wallet details."
+        );
+        return;
+      }
+
       const {
         error,
       } =
@@ -202,7 +253,7 @@ export default function StripePaymentForm({
 
           confirmParams: {
             return_url:
-              `${window.location.origin}/checkout/payment`,
+              returnUrl(),
           },
 
           redirect:
