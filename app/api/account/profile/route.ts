@@ -13,6 +13,9 @@ import {
 
 import Customer from "@/models/Customer";
 
+const PHONE_REGEX =
+  /^\+[1-9]\d{6,14}$/;
+
 function normalizeString(
   value: unknown
 ) {
@@ -239,13 +242,16 @@ export async function PATCH(
     }
 
     if (
-      phone.length > 20
+      phone &&
+      !PHONE_REGEX.test(
+        phone
+      )
     ) {
       return NextResponse.json(
         {
           success: false,
           message:
-            "Phone number is too long.",
+            "Please enter a valid phone number.",
         },
         {
           status: 400,
@@ -255,27 +261,27 @@ export async function PATCH(
 
     await connectDB();
 
+    const update = phone
+      ? {
+          $set: {
+            name,
+            phone,
+          },
+        }
+      : {
+          $set: {
+            name,
+          },
+
+          $unset: {
+            phone: 1,
+          },
+        };
+
     const customer =
       await Customer.findByIdAndUpdate(
         currentCustomer._id,
-        {
-          $set: {
-            name,
-
-            ...(phone
-              ? {
-                  phone,
-                }
-              : {}),
-
-            ...(!phone
-              ? {
-                  $unset:
-                    undefined,
-                }
-              : {}),
-          },
-        },
+        update,
         {
           returnDocument:
             "after",
@@ -294,13 +300,6 @@ export async function PATCH(
           status: 404,
         }
       );
-    }
-
-    if (!phone) {
-      customer.phone =
-        undefined;
-
-      await customer.save();
     }
 
     return NextResponse.json({

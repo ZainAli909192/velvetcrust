@@ -9,6 +9,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
   Eye,
   EyeOff,
   KeyRound,
@@ -32,9 +33,123 @@ import {
   useAuth,
 } from "@/components/store/auth-context";
 
+import {
+  countryPhoneCodes,
+} from "@/lib/countries";
+
 type ErrorResponse = {
   message?: string;
 };
+
+const DEFAULT_COUNTRY_CODE =
+  "+971";
+
+function splitPhoneNumber(
+  value: string
+) {
+  const savedPhone =
+    value.trim();
+
+  if (!savedPhone) {
+    return {
+      countryCode:
+        DEFAULT_COUNTRY_CODE,
+      phone: "",
+    };
+  }
+
+  if (
+    !savedPhone.startsWith(
+      "+"
+    )
+  ) {
+    return {
+      countryCode:
+        DEFAULT_COUNTRY_CODE,
+
+      phone:
+        savedPhone.replace(
+          /\D/g,
+          ""
+        ),
+    };
+  }
+
+  const dialCodes = [
+    ...new Set(
+      countryPhoneCodes.map(
+        (country) =>
+          country.dialCode
+      )
+    ),
+  ].sort(
+    (a, b) =>
+      b.length - a.length
+  );
+
+  const matchedCode =
+    dialCodes.find(
+      (dialCode) =>
+        savedPhone.startsWith(
+          dialCode
+        )
+    );
+
+  if (!matchedCode) {
+    return {
+      countryCode:
+        DEFAULT_COUNTRY_CODE,
+
+      phone:
+        savedPhone.replace(
+          /\D/g,
+          ""
+        ),
+    };
+  }
+
+  return {
+    countryCode:
+      matchedCode,
+
+    phone:
+      savedPhone
+        .slice(
+          matchedCode.length
+        )
+        .replace(
+          /\D/g,
+          ""
+        ),
+  };
+}
+
+function buildInternationalPhone(
+  countryCode: string,
+  phone: string
+) {
+  let nationalNumber =
+    phone.replace(
+      /\D/g,
+      ""
+    );
+
+  if (!nationalNumber) {
+    return "";
+  }
+
+  nationalNumber =
+    nationalNumber.replace(
+      /^0+/,
+      ""
+    );
+
+  if (!nationalNumber) {
+    return "";
+  }
+
+  return `${countryCode}${nationalNumber}`;
+}
 
 export default function ProfilePage() {
   const router =
@@ -50,6 +165,13 @@ export default function ProfilePage() {
     name,
     setName,
   ] = useState("");
+
+  const [
+    countryCode,
+    setCountryCode,
+  ] = useState(
+    DEFAULT_COUNTRY_CODE
+  );
 
   const [
     phone,
@@ -125,8 +247,17 @@ export default function ProfilePage() {
       user.name
     );
 
+    const parsedPhone =
+      splitPhoneNumber(
+        user.phone ?? ""
+      );
+
+    setCountryCode(
+      parsedPhone.countryCode
+    );
+
     setPhone(
-      user.phone ?? ""
+      parsedPhone.phone
     );
   }, [user]);
 
@@ -145,6 +276,37 @@ export default function ProfilePage() {
     router,
   ]);
 
+  function handlePhoneChange(
+    value: string
+  ) {
+    const numbersOnly =
+      value.replace(
+        /\D/g,
+        ""
+      );
+
+    setPhone(
+      numbersOnly.slice(
+        0,
+        15
+      )
+    );
+
+    setError("");
+    setSuccess("");
+  }
+
+  function handleCountryChange(
+    value: string
+  ) {
+    setCountryCode(
+      value
+    );
+
+    setError("");
+    setSuccess("");
+  }
+
   async function saveProfile(
     event:
       React.FormEvent
@@ -161,15 +323,44 @@ export default function ProfilePage() {
     const cleanName =
       name.trim();
 
-    const cleanPhone =
-      phone.trim();
-
     if (
       cleanName.length <
-      2
+        2 ||
+      cleanName.length >
+        80
     ) {
       setError(
-        "Please enter your full name."
+        "Name must be between 2 and 80 characters."
+      );
+
+      return;
+    }
+
+    const fullPhone =
+      buildInternationalPhone(
+        countryCode,
+        phone
+      );
+
+    if (
+      phone &&
+      !fullPhone
+    ) {
+      setError(
+        "Please enter a valid phone number."
+      );
+
+      return;
+    }
+
+    if (
+      fullPhone &&
+      !/^\+[1-9]\d{6,14}$/.test(
+        fullPhone
+      )
+    ) {
+      setError(
+        "Please enter a valid phone number."
       );
 
       return;
@@ -186,7 +377,7 @@ export default function ProfilePage() {
               cleanName,
 
             phone:
-              cleanPhone,
+              fullPhone,
           }
         );
 
@@ -406,12 +597,15 @@ export default function ProfilePage() {
               autoComplete="name"
               onChange={(
                 event
-              ) =>
+              ) => {
                 setName(
                   event.target
                     .value
-                )
-              }
+                );
+
+                setError("");
+                setSuccess("");
+              }}
               className="mt-2 min-h-12 w-full rounded-[14px] border border-[var(--brand-border)] bg-white px-4 text-sm outline-none transition focus:border-[var(--brand-primary)]"
             />
           </div>
@@ -458,22 +652,90 @@ export default function ProfilePage() {
               Phone
             </FieldLabel>
 
-            <input
-              value={phone}
-              maxLength={20}
-              inputMode="tel"
-              autoComplete="tel"
-              onChange={(
-                event
-              ) =>
-                setPhone(
-                  event.target
-                    .value
-                )
-              }
-              placeholder="+971"
-              className="mt-2 min-h-12 w-full rounded-[14px] border border-[var(--brand-border)] bg-white px-4 text-sm outline-none transition focus:border-[var(--brand-primary)]"
-            />
+            <div className="mt-2 flex gap-2">
+              <div className="relative w-[135px] shrink-0 sm:w-[150px]">
+                <select
+                  value={
+                    countryCode
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    handleCountryChange(
+                      event.target
+                        .value
+                    )
+                  }
+                  aria-label="Country calling code"
+                  className="min-h-12 w-full cursor-pointer appearance-none rounded-[14px] border border-[var(--brand-border)] bg-white py-2 pl-3 pr-8 text-sm text-[var(--brand-text-dark)] outline-none transition focus:border-[var(--brand-primary)]"
+                >
+                  {countryPhoneCodes.map(
+                    (country) => (
+                      <option
+                        key={
+                          country.code
+                        }
+                        value={
+                          country.dialCode
+                        }
+                      >
+                        {
+                          country.code
+                        }{" "}
+                        {
+                          country.dialCode
+                        }
+                      </option>
+                    )
+                  )}
+                </select>
+
+                <ChevronDown
+                  size={14}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--brand-muted)]"
+                />
+              </div>
+
+              <input
+                type="tel"
+                value={phone}
+                maxLength={15}
+                inputMode="numeric"
+                autoComplete="tel-national"
+                placeholder="501234567"
+                onChange={(
+                  event
+                ) =>
+                  handlePhoneChange(
+                    event.target
+                      .value
+                  )
+                }
+                onKeyDown={(
+                  event
+                ) => {
+                  if (
+                    [
+                      "e",
+                      "E",
+                      "+",
+                      "-",
+                      ".",
+                      " ",
+                    ].includes(
+                      event.key
+                    )
+                  ) {
+                    event.preventDefault();
+                  }
+                }}
+                className="min-h-12 min-w-0 flex-1 rounded-[14px] border border-[var(--brand-border)] bg-white px-4 text-sm outline-none transition focus:border-[var(--brand-primary)]"
+              />
+            </div>
+
+            <p className="mt-2 text-[11px] leading-5 text-[var(--brand-muted)]">
+              Select your country code and enter numbers only.
+            </p>
           </div>
 
           {error && (

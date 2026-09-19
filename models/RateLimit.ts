@@ -13,7 +13,8 @@ export type RateLimitType =
   | "order-cancel-ip"
   | "order-cancel-customer"
   | "password-change-ip"
-  | "password-change-customer";
+  | "password-change-customer"
+  | "collaboration";
 
 export interface IRateLimit
   extends Document {
@@ -48,6 +49,7 @@ const RateLimitSchema =
           "order-cancel-customer",
           "password-change-ip",
           "password-change-customer",
+          "collaboration",
         ],
       },
 
@@ -72,7 +74,7 @@ const RateLimitSchema =
     {
       timestamps: true,
       versionKey: false,
-    }
+    },
   );
 
 RateLimitSchema.index(
@@ -82,7 +84,7 @@ RateLimitSchema.index(
   },
   {
     unique: true,
-  }
+  },
 );
 
 RateLimitSchema.index(
@@ -91,14 +93,14 @@ RateLimitSchema.index(
   },
   {
     expireAfterSeconds: 0,
-  }
+  },
 );
 
 const RateLimit: Model<IRateLimit> =
   mongoose.models.RateLimit ||
   mongoose.model<IRateLimit>(
     "RateLimit",
-    RateLimitSchema
+    RateLimitSchema,
   );
 
 export default RateLimit;

@@ -1,7 +1,7 @@
-import {
+import mongoose, {
+  Document,
+  Model,
   Schema,
-  model,
-  models,
   Types,
 } from "mongoose";
 
@@ -12,299 +12,671 @@ export type PaymentMethod =
   | "tabby"
   | "tamara";
 
-export type OrderItem = {
+export type PaymentStatus =
+  | "Pending"
+  | "Paid"
+  | "Failed"
+  | "Refunded";
+
+export type OrderStatus =
+  | "Pending"
+  | "Confirmed"
+  | "Processing"
+  | "Delivered"
+  | "Cancelled";
+
+export type CheckoutType =
+  | "guest"
+  | "customer";
+
+export interface IOrderItem {
+  productId: Types.ObjectId;
   name: string;
   image: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
-};
+}
 
-const orderItemSchema = new Schema(
-  {
-    productId: {
-      type: Types.ObjectId,
-      ref: "Product",
-      required: true,
-    },
+export interface IOrderCustomerDetails {
+  fullName: string;
+  email: string;
+  phone: string;
+}
 
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+export interface IOrderDeliveryAddress {
+  emirate: string;
+  area: string;
+  addressLine: string;
+  building?: string;
+  apartment?: string;
+  notes?: string;
+}
 
-    image: {
-      type: String,
-      default: "",
-    },
+export interface IOrder
+  extends Document {
+  orderNumber: string;
 
-    quantity: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 20,
-    },
+  customerId?:
+    | Types.ObjectId
+    | null;
 
-    unitPrice: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+  checkoutType:
+    CheckoutType;
 
-    totalPrice: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-  },
-  {
-    _id: false,
-  }
-);
+  idempotencyScope:
+    string;
 
-const customerDetailsSchema = new Schema(
-  {
-    fullName: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 100,
-    },
+  idempotencyKey:
+    string;
 
-    email: {
-      type: String,
-      required: true,
-      lowercase: true,
-      trim: true,
-      maxlength: 254,
-    },
+  guestAccessTokenHash?:
+    | string
+    | null;
 
-    phone: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 30,
-    },
-  },
-  {
-    _id: false,
-  }
-);
+  customerDetails:
+    IOrderCustomerDetails;
 
-const deliveryAddressSchema = new Schema(
-  {
-    emirate: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 50,
-    },
+  deliveryAddress:
+    IOrderDeliveryAddress;
 
-    area: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 100,
-    },
+  items:
+    IOrderItem[];
 
-    addressLine: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 200,
-    },
+  subtotal: number;
 
-    building: {
-      type: String,
-      default: "",
-      trim: true,
-      maxlength: 100,
-    },
+  deliveryFee: number;
 
-    apartment: {
-      type: String,
-      default: "",
-      trim: true,
-      maxlength: 50,
-    },
+  total: number;
 
-    notes: {
-      type: String,
-      default: "",
-      trim: true,
-      maxlength: 500,
-    },
-  },
-  {
-    _id: false,
-  }
-);
+  paymentMethod:
+    PaymentMethod;
 
-const orderSchema = new Schema(
-  {
-    orderNumber: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true,
-    },
+  paymentStatus:
+    PaymentStatus;
 
-    customerId: {
-      type: Types.ObjectId,
-      ref: "Customer",
-      default: null,
-      index: true,
-    },
+  paymentReference?:
+    string | null;
 
-    checkoutType: {
-      type: String,
-      enum: [
-        "guest",
-        "customer",
-      ],
-      required: true,
-    },
+  status:
+    OrderStatus;
 
-    idempotencyScope: {
-      type: String,
-      required: true,
-      index: true,
-    },
+  cancelledAt?:
+    Date | null;
 
-    idempotencyKey: {
-      type: String,
-      required: true,
-    },
+  deliveredAt?:
+    Date | null;
 
-    guestAccessTokenHash: {
-      type: String,
-      default: null,
-      select: false,
-    },
+  customerConfirmationEmailSentAt?:
+    Date | null;
 
-    customerDetails: {
-      type: customerDetailsSchema,
-      required: true,
-    },
+  customerConfirmationEmailClaimedAt?:
+    Date | null;
 
-    deliveryAddress: {
-      type: deliveryAddressSchema,
-      required: true,
-    },
+  ownerConfirmationEmailSentAt?:
+    Date | null;
 
-    items: {
-      type: [orderItemSchema],
-      required: true,
+  ownerConfirmationEmailClaimedAt?:
+    Date | null;
 
-      validate: {
-        validator: (
-          items: unknown[]
-        ) =>
-          items.length >= 1 &&
-          items.length <= 10,
+  createdAt: Date;
 
-        message:
-          "Order must contain between 1 and 10 products.",
+  updatedAt: Date;
+}
+
+const orderItemSchema =
+  new Schema<IOrderItem>(
+    {
+      productId: {
+        type:
+          Schema.Types
+            .ObjectId,
+
+        ref:
+          "Product",
+
+        required:
+          true,
+      },
+
+      name: {
+        type:
+          String,
+
+        required:
+          true,
+
+        trim:
+          true,
+
+        maxlength:
+          160,
+      },
+
+      image: {
+        type:
+          String,
+
+        required:
+          true,
+
+        trim:
+          true,
+
+        maxlength:
+          1000,
+      },
+
+      quantity: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          1,
+
+        max:
+          20,
+      },
+
+      unitPrice: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+      },
+
+      totalPrice: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
       },
     },
+    {
+      _id:
+        false,
+    }
+  );
 
-    subtotal: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+const customerDetailsSchema =
+  new Schema<IOrderCustomerDetails>(
+    {
+      fullName: {
+        type:
+          String,
 
-    deliveryFee: {
-      type: Number,
-      required: true,
-      min: 0,
-      default: 0,
-    },
+        required:
+          true,
 
-    total: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+        trim:
+          true,
 
-    paymentMethod: {
-      type: String,
-      enum: [
-        "card",
-        "apple_pay",
-        "google_pay",
-        "tabby",
-        "tamara",
-      ],
-      required: true,
-    },
+        minlength:
+          2,
 
-    paymentStatus: {
-      type: String,
-      enum: [
-        "Pending",
-        "Paid",
-        "Failed",
-        "Refunded",
-      ],
-      default: "Pending",
-      index: true,
-    },
+        maxlength:
+          80,
+      },
 
-    paymentReference: {
-      type: String,
-      default: null,
-    },
+      email: {
+        type:
+          String,
 
-    status: {
-      type: String,
-      enum: [
-        "Pending",
-        "Confirmed",
-        "Processing",
-        "Delivered",
-        "Cancelled",
-      ],
-      default: "Pending",
-      index: true,
-    },
+        required:
+          true,
 
-    cancelledAt: {
-      type: Date,
-      default: null,
-    },
+        trim:
+          true,
 
-    deliveredAt: {
-      type: Date,
-      default: null,
+        lowercase:
+          true,
+
+        maxlength:
+          254,
+      },
+
+      phone: {
+        type:
+          String,
+
+        required:
+          true,
+
+        trim:
+          true,
+
+        maxlength:
+          20,
+      },
     },
+    {
+      _id:
+        false,
+    }
+  );
+
+const deliveryAddressSchema =
+  new Schema<IOrderDeliveryAddress>(
+    {
+      emirate: {
+        type:
+          String,
+
+        required:
+          true,
+
+        trim:
+          true,
+
+        maxlength:
+          80,
+      },
+
+      area: {
+        type:
+          String,
+
+        required:
+          true,
+
+        trim:
+          true,
+
+        maxlength:
+          120,
+      },
+
+      addressLine: {
+        type:
+          String,
+
+        required:
+          true,
+
+        trim:
+          true,
+
+        maxlength:
+          300,
+      },
+
+      building: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          120,
+
+        default:
+          undefined,
+      },
+
+      apartment: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          80,
+
+        default:
+          undefined,
+      },
+
+      notes: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          500,
+
+        default:
+          undefined,
+      },
+    },
+    {
+      _id:
+        false,
+    }
+  );
+
+const orderSchema =
+  new Schema<IOrder>(
+    {
+      orderNumber: {
+        type:
+          String,
+
+        required:
+          true,
+
+        unique:
+          true,
+
+        trim:
+          true,
+
+        index:
+          true,
+      },
+
+      customerId: {
+        type:
+          Schema.Types
+            .ObjectId,
+
+        ref:
+          "Customer",
+
+        default:
+          null,
+
+        index:
+          true,
+      },
+
+      checkoutType: {
+        type:
+          String,
+
+        enum: [
+          "guest",
+          "customer",
+        ],
+
+        required:
+          true,
+      },
+
+      idempotencyScope: {
+        type:
+          String,
+
+        required:
+          true,
+
+        index:
+          true,
+      },
+
+      idempotencyKey: {
+        type:
+          String,
+
+        required:
+          true,
+      },
+
+      guestAccessTokenHash: {
+        type:
+          String,
+
+        default:
+          null,
+
+        select:
+          false,
+      },
+
+      customerDetails: {
+        type:
+          customerDetailsSchema,
+
+        required:
+          true,
+      },
+
+      deliveryAddress: {
+        type:
+          deliveryAddressSchema,
+
+        required:
+          true,
+      },
+
+      items: {
+        type: [
+          orderItemSchema,
+        ],
+
+        required:
+          true,
+
+        validate: {
+          validator(
+            items:
+              IOrderItem[]
+          ) {
+            return (
+              Array.isArray(
+                items
+              ) &&
+              items.length >=
+                1 &&
+              items.length <=
+                10
+            );
+          },
+
+          message:
+            "Order must contain between 1 and 10 items.",
+        },
+      },
+
+      subtotal: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+      },
+
+      deliveryFee: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+
+        default:
+          0,
+      },
+
+      total: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+      },
+
+      paymentMethod: {
+        type:
+          String,
+
+        enum: [
+          "card",
+          "apple_pay",
+          "google_pay",
+          "tabby",
+          "tamara",
+        ],
+
+        required:
+          true,
+      },
+
+      paymentStatus: {
+        type:
+          String,
+
+        enum: [
+          "Pending",
+          "Paid",
+          "Failed",
+          "Refunded",
+        ],
+
+        required:
+          true,
+
+        default:
+          "Pending",
+
+        index:
+          true,
+      },
+
+      paymentReference: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        default:
+          null,
+
+        index:
+          true,
+      },
+
+      status: {
+        type:
+          String,
+
+        enum: [
+          "Pending",
+          "Confirmed",
+          "Processing",
+          "Delivered",
+          "Cancelled",
+        ],
+
+        required:
+          true,
+
+        default:
+          "Pending",
+
+        index:
+          true,
+      },
+
+      cancelledAt: {
+        type:
+          Date,
+
+        default:
+          null,
+      },
+
+      deliveredAt: {
+        type:
+          Date,
+
+        default:
+          null,
+      },
+
+      customerConfirmationEmailSentAt: {
+        type:
+          Date,
+
+        default:
+          null,
+      },
+
+      customerConfirmationEmailClaimedAt: {
+        type:
+          Date,
+
+        default:
+          null,
+      },
+
+      ownerConfirmationEmailSentAt: {
+        type:
+          Date,
+
+        default:
+          null,
+      },
+
+      ownerConfirmationEmailClaimedAt: {
+        type:
+          Date,
+
+        default:
+          null,
+      },
+    },
+    {
+      timestamps:
+        true,
+
+      versionKey:
+        false,
+    }
+  );
+
+orderSchema.index(
+  {
+    idempotencyScope:
+      1,
+
+    idempotencyKey:
+      1,
   },
   {
-    timestamps: true,
+    unique:
+      true,
   }
 );
 
 orderSchema.index({
-  customerId: 1,
-  createdAt: -1,
+  customerId:
+    1,
+
+  createdAt:
+    -1,
 });
 
-orderSchema.index(
-  {
-    idempotencyScope: 1,
-    idempotencyKey: 1,
-  },
-  {
-    unique: true,
-  }
-);
-
-const Order =
-  models.Order ||
-  model(
-    "Order",
-    orderSchema
-  );
+const Order:
+  Model<IOrder> =
+    mongoose.models
+      .Order ||
+    mongoose.model<IOrder>(
+      "Order",
+      orderSchema
+    );
 
 export default Order;

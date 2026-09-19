@@ -1,5 +1,7 @@
 "use client";
 
+import axios from "axios";
+
 import {
   type FormEvent,
   type ReactNode,
@@ -8,7 +10,7 @@ import {
 
 import {
   ArrowRight,
-  CalendarDays,
+  ChevronDown,
   Mail,
   MessageSquareText,
   Phone,
@@ -19,6 +21,10 @@ import {
   AnimatePresence,
   motion,
 } from "framer-motion";
+
+import {
+  countryPhoneCodes,
+} from "@/lib/countries";
 
 import CollaborationTypes, {
   type CollaborationType,
@@ -34,28 +40,36 @@ const viewport = {
 type FormData = {
   name: string;
   email: string;
+  countryCode: string;
   phone: string;
-  social: string;
   type: CollaborationType | "";
   message: string;
-  date: string;
 };
 
 const initialForm: FormData = {
   name: "",
   email: "",
+  countryCode: "+971",
   phone: "",
-  social: "",
   type: "",
   message: "",
-  date: "",
 };
 
 export default function CollaborationForm() {
-  const [form, setForm] = useState<FormData>(initialForm);
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [showTypeError, setShowTypeError] = useState(false);
+  const [form, setForm] =
+    useState<FormData>(initialForm);
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const [success, setSuccess] =
+    useState(false);
+
+  const [showTypeError, setShowTypeError] =
+    useState(false);
+
+  const [submitError, setSubmitError] =
+    useState("");
 
   function updateField(
     field: keyof FormData,
@@ -65,6 +79,10 @@ export default function CollaborationForm() {
       ...current,
       [field]: value,
     }));
+
+    if (submitError) {
+      setSubmitError("");
+    }
   }
 
   function handleTypeChange(
@@ -76,6 +94,19 @@ export default function CollaborationForm() {
     }));
 
     setShowTypeError(false);
+    setSubmitError("");
+  }
+
+  function handlePhoneChange(
+    value: string,
+  ) {
+    const numbersOnly =
+      value.replace(/\D/g, "");
+
+    updateField(
+      "phone",
+      numbersOnly.slice(0, 15),
+    );
   }
 
   async function handleSubmit(
@@ -88,22 +119,62 @@ export default function CollaborationForm() {
       return;
     }
 
+    if (
+      form.phone.length < 6 ||
+      form.phone.length > 15
+    ) {
+      setSubmitError(
+        "Please enter a valid phone number.",
+      );
+      return;
+    }
+
     try {
       setSubmitting(true);
       setShowTypeError(false);
+      setSubmitError("");
 
-      // Replace this with API request later
-      await new Promise<void>((resolve) => {
-        window.setTimeout(() => {
-          resolve();
-        }, 900);
-      });
+      const phone =
+        `${form.countryCode}${form.phone}`;
+
+      await axios.post(
+        "/api/collaborations",
+        {
+          name: form.name,
+          email: form.email,
+          phone,
+          type: form.type,
+          message: form.message,
+        },
+        {
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+        },
+      );
 
       setSuccess(true);
     } catch (error) {
       console.error(
         "Collaboration enquiry failed:",
         error,
+      );
+
+      if (axios.isAxiosError(error)) {
+        const message =
+          typeof error.response?.data
+            ?.message === "string"
+            ? error.response.data.message
+            : "Unable to send your enquiry. Please try again.";
+
+        setSubmitError(message);
+
+        return;
+      }
+
+      setSubmitError(
+        "Unable to send your enquiry. Please try again.",
       );
     } finally {
       setSubmitting(false);
@@ -114,6 +185,7 @@ export default function CollaborationForm() {
     setSuccess(false);
     setSubmitting(false);
     setShowTypeError(false);
+    setSubmitError("");
     setForm(initialForm);
   }
 
@@ -211,8 +283,9 @@ export default function CollaborationForm() {
               lg:text-6xl
             "
           >
-            Tell us what you &nbsp; 
-            <span className=" text-[#A86F5A]">
+            Tell us what you &nbsp;
+
+            <span className="text-[#A86F5A]">
               have in mind.
             </span>
           </h2>
@@ -228,8 +301,9 @@ export default function CollaborationForm() {
               sm:text-[15px]
             "
           >
-            Choose how you&apos;d like to collaborate
-            and share a few details with us.
+            Choose how you&apos;d like to
+            collaborate and share a few details
+            with us.
           </p>
         </motion.div>
 
@@ -280,7 +354,9 @@ export default function CollaborationForm() {
               >
                 <CollaborationTypes
                   value={form.type}
-                  onChange={handleTypeChange}
+                  onChange={
+                    handleTypeChange
+                  }
                 />
 
                 <AnimatePresence>
@@ -305,7 +381,8 @@ export default function CollaborationForm() {
                         text-[#A02020]
                       "
                     >
-                      Please select a collaboration type.
+                      Please select a
+                      collaboration type.
                     </motion.p>
                   )}
                 </AnimatePresence>
@@ -355,13 +432,19 @@ export default function CollaborationForm() {
                   "
                 >
                   <Field
-                    icon={<UserRound size={17} />}
+                    icon={
+                      <UserRound
+                        size={17}
+                      />
+                    }
                     label="Full Name"
                     required
                   >
                     <input
                       type="text"
                       required
+                      minLength={2}
+                      maxLength={80}
                       autoComplete="name"
                       value={form.name}
                       onChange={(event) =>
@@ -371,18 +454,23 @@ export default function CollaborationForm() {
                         )
                       }
                       placeholder="Your name"
-                      className={inputStyles}
+                      className={
+                        inputStyles
+                      }
                     />
                   </Field>
 
                   <Field
-                    icon={<Mail size={17} />}
+                    icon={
+                      <Mail size={17} />
+                    }
                     label="Email"
                     required
                   >
                     <input
                       type="email"
                       required
+                      maxLength={254}
                       autoComplete="email"
                       value={form.email}
                       onChange={(event) =>
@@ -392,50 +480,170 @@ export default function CollaborationForm() {
                         )
                       }
                       placeholder="you@example.com"
-                      className={inputStyles}
+                      className={
+                        inputStyles
+                      }
                     />
                   </Field>
 
                   <Field
-                    icon={<Phone size={17} />}
+                    icon={
+                      <Phone size={17} />
+                    }
                     label="Phone / WhatsApp"
                     required
                   >
-                    <input
-                      type="tel"
-                      required
-                      autoComplete="tel"
-                      value={form.phone}
-                      onChange={(event) =>
-                        updateField(
-                          "phone",
-                          event.target.value,
-                        )
-                      }
-                      placeholder="+971"
-                      className={inputStyles}
-                    />
+                    <div className="flex gap-2">
+                      <div
+                        className="
+                          relative
+                          w-[135px]
+                          shrink-0
+
+                          sm:w-[150px]
+                        "
+                      >
+                        <select
+                          required
+                          aria-label="Country calling code"
+                          value={
+                            form.countryCode
+                          }
+                          onChange={(
+                            event,
+                          ) =>
+                            updateField(
+                              "countryCode",
+                              event.target
+                                .value,
+                            )
+                          }
+                          className="
+                            min-h-14
+                            w-full
+                            cursor-pointer
+                            appearance-none
+                            rounded-[16px]
+                            border
+                            border-[#510000]/10
+                            bg-[#FFF9F2]
+                            py-3
+                            pl-4
+                            pr-9
+                            text-sm
+                            text-[#432B28]
+                            outline-none
+                            transition-all
+                            duration-300
+
+                            hover:border-[#510000]/20
+
+                            focus:border-[#510000]/35
+                            focus:bg-white
+                            focus:shadow-[0_0_0_4px_rgba(81,0,0,0.04)]
+                          "
+                        >
+                          {countryPhoneCodes.map(
+                            (country) => (
+                              <option
+                                key={
+                                  country.code
+                                }
+                                value={
+                                  country.dialCode
+                                }
+                              >
+                                {
+                                  country.code
+                                }{" "}
+                                {
+                                  country.dialCode
+                                }
+                              </option>
+                            ),
+                          )}
+                        </select>
+
+                        <ChevronDown
+                          size={15}
+                          aria-hidden="true"
+                          className="
+                            pointer-events-none
+                            absolute
+                            right-3
+                            top-1/2
+                            -translate-y-1/2
+                            text-[#8D5550]
+                          "
+                        />
+                      </div>
+
+                      <input
+                        type="tel"
+                        required
+                        inputMode="numeric"
+                        autoComplete="tel-national"
+                        minLength={6}
+                        maxLength={15}
+                        value={form.phone}
+                        onChange={(
+                          event,
+                        ) =>
+                          handlePhoneChange(
+                            event.target
+                              .value,
+                          )
+                        }
+                        onKeyDown={(
+                          event,
+                        ) => {
+                          if (
+                            [
+                              "e",
+                              "E",
+                              "+",
+                              "-",
+                              ".",
+                              " ",
+                            ].includes(
+                              event.key,
+                            )
+                          ) {
+                            event.preventDefault();
+                          }
+                        }}
+                        placeholder="501234567"
+                        className={
+                          inputStyles
+                        }
+                      />
+                    </div>
                   </Field>
-
-
                 </div>
 
                 <div className="mt-5">
                   <Field
                     icon={
-                      <MessageSquareText size={17} />
+                      <MessageSquareText
+                        size={17}
+                      />
                     }
                     label="Tell Us About Your Idea"
                     required
                   >
                     <textarea
                       required
+                      minLength={10}
+                      maxLength={2000}
                       rows={5}
-                      value={form.message}
+                      value={
+                        form.message
+                      }
                       onChange={(event) =>
                         updateField(
                           "message",
-                          event.target.value,
+                          event.target
+                            .value,
                         )
                       }
                       placeholder="A few details about your collaboration..."
@@ -446,7 +654,62 @@ export default function CollaborationForm() {
                       `}
                     />
                   </Field>
+
+                  <div className="mt-2 flex justify-end">
+                    <span
+                      className="
+                        text-[10px]
+                        text-[#765E59]/55
+                      "
+                    >
+                      {
+                        form.message
+                          .length
+                      }
+                      /2000
+                    </span>
+                  </div>
                 </div>
+
+                <AnimatePresence>
+                  {submitError && (
+                    <motion.div
+                      initial={{
+                        opacity: 0,
+                        y: -5,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      exit={{
+                        opacity: 0,
+                        y: -5,
+                      }}
+                      role="alert"
+                      className="
+                        mt-5
+                        rounded-[14px]
+                        border
+                        border-[#A02020]/10
+                        bg-[#A02020]/[0.04]
+                        px-4
+                        py-3
+                      "
+                    >
+                      <p
+                        className="
+                          text-xs
+                          font-medium
+                          leading-5
+                          text-[#A02020]
+                        "
+                      >
+                        {submitError}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div
                   className="
@@ -468,14 +731,17 @@ export default function CollaborationForm() {
                       text-[#765E59]/70
                     "
                   >
-                    We&apos;ll review your enquiry and get
-                    back to you if the collaboration is a
-                    good fit.
+                    We&apos;ll review your
+                    enquiry and get back to
+                    you if the collaboration
+                    is a good fit.
                   </p>
 
                   <motion.button
                     type="submit"
-                    disabled={submitting}
+                    disabled={
+                      submitting
+                    }
                     whileHover={
                       submitting
                         ? undefined
@@ -557,7 +823,8 @@ export default function CollaborationForm() {
                             }}
                             transition={{
                               duration: 0.8,
-                              repeat: Infinity,
+                              repeat:
+                                Infinity,
                               ease: "linear",
                             }}
                             className="
@@ -597,7 +864,9 @@ export default function CollaborationForm() {
                         >
                           Send Enquiry
 
-                          <ArrowRight size={16} />
+                          <ArrowRight
+                            size={16}
+                          />
                         </motion.span>
                       )}
                     </AnimatePresence>
@@ -655,48 +924,6 @@ function Field({
 
       {children}
     </label>
-  );
-}
-
-function InstagramIcon({
-  size = 17,
-}: {
-  size?: number;
-}) {
-  return (
-    <svg
-      aria-hidden="true"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect
-        x="3"
-        y="3"
-        width="18"
-        height="18"
-        rx="5"
-      />
-
-      <circle
-        cx="12"
-        cy="12"
-        r="4"
-      />
-
-      <circle
-        cx="17.5"
-        cy="6.5"
-        r="0.8"
-        fill="currentColor"
-        stroke="none"
-      />
-    </svg>
   );
 }
 
