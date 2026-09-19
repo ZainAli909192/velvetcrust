@@ -35,7 +35,7 @@ export type OrderEmailData = {
 
   status?: string;
 
-  paymentReference?: string;
+  paymentReference?: string | null;
 
   cancelledAt?:
     | Date

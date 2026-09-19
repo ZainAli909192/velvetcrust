@@ -38,6 +38,8 @@ export interface IOrderItem {
   totalPrice: number;
 }
 
+export type OrderItem = IOrderItem;
+
 export interface IOrderCustomerDetails {
   fullName: string;
   email: string;

@@ -230,8 +230,10 @@ export async function POST(
     }
 
     if (
-      !STRIPE_METHODS.includes(
-        order.paymentMethod
+      !STRIPE_METHODS.some(
+        (method) =>
+          method ===
+          order.paymentMethod
       )
     ) {
       return NextResponse.json(
